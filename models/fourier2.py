@@ -7,7 +7,7 @@ import time
 
 # Fourier conv layer
 class FConv2d(torch.nn.Module):
-    def __init__(self, in_channels, out_channels, stride, kernel_size, L):
+    def __init__(self, in_channels, num_channels, stride, kernel_size, L):
         # Omit bias for simplicity
         super().__init__()
         # Set variables 
