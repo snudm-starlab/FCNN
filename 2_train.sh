@@ -1,1 +1,1 @@
-CUDA_VISIBLE_DEVICES=2 python tt.py -net resnet34 -gpu -lam 1e-3 -reg l1 -load -lr 0.001
+CUDA_VISIBLE_DEVICES=0 python ttt.py -net fresnet34 -gpu -lr 0.1
