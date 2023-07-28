@@ -203,7 +203,7 @@ if __name__ == '__main__':
 
     for epoch in range(1, settings.EPOCH + 1):
         if epoch > args.warm:
-            train_scheduler.step(epoch)
+            train_scheduler.step()
 
         if args.resume:
             if epoch <= resume_epoch:
