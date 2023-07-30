@@ -26,23 +26,29 @@ class FConv2d(torch.nn.Module):
 
         _range = torch.sqrt(torch.tensor(1/(self.cin * self.k * self.k)))
         self.weight = nn.Parameter(
-                (torch.rand(self.n, self.cin//8 , self.k, self.k) - 0.5) * 2 * _range
+                (torch.rand(self.n, self.cin//4 , self.k, self.k) - 0.5) * 2 * _range
                 )
 
-
     def forward(self, x):
-        x_hat = rfftn(x, dim=[1,2,3]) # input: [b, cin, l, l]
-        w_hat = rfftn(self.weight, s=[self.cin, self.l, self.l] )
+        sr = (self.n * self.cin) // (self.cout) # shrink ratio
+        x_hat = fftn(x, dim=[1,2,3]) # input: [b, cin, l, l]
+        w_hat = fftn(self.weight, s=[self.cin, self.l, self.l])
         # print("x_hat.shape: ", x_hat.shape, "w_hat.shape: ", w_hat.shape)
         # freq_out = torch.einsum('bchw,nchw->bnchw', x_hat, w_hat)
         # out = irfftn(freq_out, dim=[2,3,4]).real # b,n,c,h,w
         freq_out = torch.einsum('bchw,nchw->bnchw', x_hat, w_hat)
-        out = irfftn(freq_out, dim=[2,3,4]).real # b,n,c,h,w
+        # _b, _n, _c, _h, _w = freq_out.shape
+        # _inds = torch.arange(self.cin)[torch.arange(self.cin)%(sr)==0].to(x.device)
+        # freq_out = torch.index_select(freq_out, 2, _inds)
+        # print("*** freq_out: ", freq_out.shape)
+        # freq_out = freq_out.view(_b, _n, sr, -1, _h, _w).sum(dim=2)
+        # out = ifftn(freq_out, dim=[2,3,4]).real # b,n,c,h,w
+        out = ifftn(freq_out, s=[self.cin, self.l, self.l]).real # b,n,c,h,w
 
         # channel shuffling
-        shrink_ratio = (self.n * self.cin) // (self.cout)
-        _inds = torch.arange(self.cin)[torch.arange(self.cin)%(shrink_ratio)==0].to(x.device)
+        _inds = torch.arange(self.cin)[torch.arange(self.cin)%(sr)==0].to(x.device)
         out = torch.index_select(out, 2, _inds) # [b, n, c//n, h, w]
+        out = out.transpose(1,2).contiguous()
         out = out.view(out.shape[0], -1, out.shape[3], out.shape[4]) # [b,c,h,w]
                 
         if self.s==2:
