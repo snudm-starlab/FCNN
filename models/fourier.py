@@ -8,13 +8,14 @@ import time
 
 class FConv2d(torch.nn.Module):
     def __init__(self, length, in_channels, out_channels, num_filters, stride,
-                 kernel_size=None):
+                 kernel_size=None, kappa=4):
         super().__init__()
         self.cin = in_channels
         self.cout = out_channels
         self.l = length
         self.n = num_filters
         self.s = stride
+        self.kappa = kappa
         
         if kernel_size is not None:
             self.k = kernel_size
@@ -26,7 +27,7 @@ class FConv2d(torch.nn.Module):
 
         _range = torch.sqrt(torch.tensor(1/(self.cin * self.k * self.k)))
         self.weight = nn.Parameter(
-                (torch.rand(self.n, self.cin//4 , self.k, self.k) - 0.5) * 2 * _range
+                (torch.rand(self.n, self.cin//self.kappa , self.k, self.k) - 0.5) * 2 * _range
                 )
 
     def forward(self, x):
@@ -55,7 +56,6 @@ class FConv2d(torch.nn.Module):
             _inds = torch.arange(self.l)[torch.arange(self.l)%2==0].to(x.device)
             out = torch.index_select(out, 2, _inds)
             out = torch.index_select(out, 3, _inds)
-        # print("Out (stride): ", out.shape)
         
         return out
 
