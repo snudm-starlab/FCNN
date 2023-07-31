@@ -29,7 +29,7 @@ class FourierBasicBlock(nn.Module):
         
         #residual function
         self.residual_function = nn.Sequential(
-            FConv2d(length*stride, in_channels, out_channels, num_filters * stride, 
+            FConv2d(length*stride, in_channels, out_channels, num_filters, 
                     stride=stride, kappa=kappa),
             nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace=True),
@@ -142,7 +142,7 @@ class FourierResNet(nn.Module):
         # def __init__(self, L, C, N, stride=1):
         for stride in strides:
             layers.append(block(self.length, self.in_channels, out_channels, 
-                                self.in_channels // nu, stride, kernel_size=None,
+                                out_channels // nu, stride, kernel_size=None,
                                 kappa=kappa))
             self.in_channels = out_channels * block.expansion
         self.length = self.length // 2
