@@ -45,7 +45,7 @@ class FourierBasicBlock(nn.Module):
         #use 1*1 convolution to match the dimension
         if stride != 1:
             self.shortcut = nn.Sequential(
-                FConv2d(length*stride, in_channels, out_channels, num_filters * stride, 
+                FConv2d(length*stride, in_channels, out_channels, num_filters, 
                         stride=stride, kernel_size=1),
                 # nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=stride, bias=False),
                 nn.BatchNorm2d(out_channels)
