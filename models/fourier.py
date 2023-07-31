@@ -18,6 +18,8 @@ class FConv2d(torch.nn.Module):
         self.kappa = kappa
         
         kernel_size=3
+        self.k = kernel_size
+        """
         if kernel_size is not None:
             self.k = kernel_size
         else:
@@ -25,8 +27,8 @@ class FConv2d(torch.nn.Module):
                 self.k = self.l//4 + 1
             else:
                 self.k = self.l//2 + 1
-
-        _range = torch.sqrt(torch.tensor(1/(self.cin * self.k * self.k)))
+        """
+        _range = torch.sqrt(torch.tensor(self.kappa/(self.cin * self.k * self.k)))
         self.weight = nn.Parameter(
                 (torch.rand(self.n, self.cin//self.kappa , self.k, self.k) - 0.5) * 2 * _range
                 )
@@ -37,16 +39,7 @@ class FConv2d(torch.nn.Module):
         sr = (self.n * self.cin) // (self.cout) # shrink ratio
         x_hat = rfftn(x, s=[self.cin, l_pad, l_pad]) # input: [b, cin, l, l]
         w_hat = rfftn(self.weight, s=[self.cin, l_pad, l_pad])
-        # print("x_hat.shape: ", x_hat.shape, "w_hat.shape: ", w_hat.shape)
-        # freq_out = torch.einsum('bchw,nchw->bnchw', x_hat, w_hat)
-        # out = irfftn(freq_out, dim=[2,3,4]).real # b,n,c,h,w
         freq_out = torch.einsum('bchw,nchw->bnchw', x_hat, w_hat)
-        # _b, _n, _c, _h, _w = freq_out.shape
-        # _inds = torch.arange(self.cin)[torch.arange(self.cin)%(sr)==0].to(x.device)
-        # freq_out = torch.index_select(freq_out, 2, _inds)
-        # print("*** freq_out: ", freq_out.shape)
-        # freq_out = freq_out.view(_b, _n, sr, -1, _h, _w).sum(dim=2)
-        # out = ifftn(freq_out, dim=[2,3,4]).real # b,n,c,h,w
         out = irfftn(freq_out, s=[self.cin, l_pad, l_pad]).real[:,:,:,_pad:, _pad:] # b,n,c,h,w
 
         # channel shuffling
