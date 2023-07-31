@@ -66,8 +66,10 @@ def get_network(args):
         from models.resnet import resnet34
         net = resnet34()
     elif args.net == 'fresnet34':
+        ######## Fourier Resnet ###########
         from models.fourier_resnet import fresnet34
-        net = fresnet34()
+        net = fresnet34(nu=args.nu, kappa=args.kappa)
+        ###################################
     elif args.net == 'resnet50':
         from models.resnet import resnet50
         net = resnet50()
