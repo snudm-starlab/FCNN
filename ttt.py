@@ -270,6 +270,9 @@ if __name__ == '__main__':
     print("="*50)
     print(args)
     print("*** Best acc: ", best_acc)
+    print(f"** # Params: {fparams+cparams+bparams+lparams:.5f}M")
+    print(f"**** Fourier: {fparams:.3f} | Conv: {cparams:.3f} |",
+          f"BN: {bparams:.3f} | Lin: {lparams:.3f}")
     print("="*50)
 
     writer.close()
