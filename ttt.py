@@ -15,12 +15,14 @@ from tqdm import tqdm
 import numpy as np
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import torch.optim as optim
 import torchvision
 import torchvision.transforms as transforms
 
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
+from models.resnet import *
 
 from conf import settings
 from utils import get_network, get_training_dataloader, get_test_dataloader, WarmUpLR, \
@@ -39,6 +41,16 @@ def train(epoch):
         optimizer.zero_grad()
         outputs = net(images)
         loss = loss_function(outputs, labels)
+        if args.alpha != -1:
+            with torch.no_grad():
+                t_outputs = teacher(images)
+            kl_div = nn.KLDivLoss()(
+                    F.log_softmax(outputs/args.tau, dim=1),
+                    F.softmax(t_outputs/args.tau, dim=1),
+                    reduction='batchmean'
+                    ) * (args.tau**2)
+            loss = args.alpha * kl_div + (1-args.alpha) * loss 
+
         loss.backward()
         optimizer.step()
 
@@ -124,6 +136,8 @@ if __name__ == '__main__':
     parser.add_argument('-b', type=int, default=128, help='batch size for dataloader')
     parser.add_argument('-warm', type=int, default=1, help='warm up training phase')
     parser.add_argument('-lr', type=float, default=0.1, help='initial learning rate')
+    parser.add_argument('-alpha', type=float, default=-1, help='balance coefficient for knowledge distillation')
+    parser.add_argument('-tau', type=float, default=2.0, help='temperature of the softmax for knowledge distillation')
     parser.add_argument('-nu', type=int, default=16, help='Coefficient for choosing the number of filters')
     parser.add_argument('-kappa', type=int, default=4, help='Coefficient for choosing kenel size')
     parser.add_argument('-resume', action='store_true', default=False, help='resume training')
@@ -222,6 +236,22 @@ if __name__ == '__main__':
     #     print(_n, _p.numel())
     # print(net)
     #######################################################################
+
+
+    ######################### Load Teacher ###############################
+    # teacher = pass
+    teacher_path = 'checkpoint/resnet34/test.pth'
+    teacher = resnet34()
+    teacher.load_state_dict(torch.load(teacher_path))
+    teacher = teacher.cuda()
+    teacher.eval()
+    # print(teacher)
+    print("* Load teacher done!!")
+    # net=teacher
+    # acc = eval_training(1)
+    # print("Teacher acc: ", acc)
+    # raise Exception
+    ######################################################################
 
     best_acc = 0.0
     if args.resume:
