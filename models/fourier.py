@@ -17,6 +17,7 @@ class FConv2d(torch.nn.Module):
         self.s = stride
         self.kappa = kappa
         
+        kernel_size=3
         if kernel_size is not None:
             self.k = kernel_size
         else:
@@ -31,9 +32,11 @@ class FConv2d(torch.nn.Module):
                 )
 
     def forward(self, x):
+        _pad = self.k//2
+        l_pad = self.l + _pad
         sr = (self.n * self.cin) // (self.cout) # shrink ratio
-        x_hat = fftn(x, dim=[1,2,3]) # input: [b, cin, l, l]
-        w_hat = fftn(self.weight, s=[self.cin, self.l, self.l])
+        x_hat = fftn(x, s=[self.cin, l_pad, l_pad]) # input: [b, cin, l, l]
+        w_hat = fftn(self.weight, s=[self.cin, l_pad, l_pad])
         # print("x_hat.shape: ", x_hat.shape, "w_hat.shape: ", w_hat.shape)
         # freq_out = torch.einsum('bchw,nchw->bnchw', x_hat, w_hat)
         # out = irfftn(freq_out, dim=[2,3,4]).real # b,n,c,h,w
@@ -44,7 +47,7 @@ class FConv2d(torch.nn.Module):
         # print("*** freq_out: ", freq_out.shape)
         # freq_out = freq_out.view(_b, _n, sr, -1, _h, _w).sum(dim=2)
         # out = ifftn(freq_out, dim=[2,3,4]).real # b,n,c,h,w
-        out = ifftn(freq_out, s=[self.cin, self.l, self.l]).real # b,n,c,h,w
+        out = ifftn(freq_out, s=[self.cin, l_pad, l_pad]).real[:,:,:,_pad:, _pad:] # b,n,c,h,w
 
         # channel shuffling
         _inds = torch.arange(self.cin)[torch.arange(self.cin)%(sr)==0].to(x.device)
