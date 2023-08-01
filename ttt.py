@@ -44,11 +44,11 @@ def train(epoch):
         if args.alpha != -1:
             with torch.no_grad():
                 t_outputs = teacher(images)
-            kl_div = nn.KLDivLoss()(
+            kl_div = F.kl_div(
                     F.log_softmax(outputs/args.tau, dim=1),
                     F.softmax(t_outputs/args.tau, dim=1),
                     reduction='batchmean'
-                    ) * (args.tau**2)
+                    ) * (args.tau * args.tau)
             loss = args.alpha * kl_div + (1-args.alpha) * loss 
 
         loss.backward()
