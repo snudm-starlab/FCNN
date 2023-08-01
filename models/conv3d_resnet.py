@@ -23,7 +23,7 @@ class CustomConv3d(nn.Module):
         self.k = kernel_size
         self.stride = stride
         self.kappa = kappa
-        nu=2
+        # nu=2
         self.nu = nu
         self.conv = nn.Conv3d(1, out_channels//nu, (in_channels//kappa, kernel_size, kernel_size), 
                          stride=(in_channels//kappa, stride,stride), padding=(0,self.k//2,self.k//2),
