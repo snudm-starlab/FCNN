@@ -203,10 +203,11 @@ if __name__ == '__main__':
 
     for _module in net.modules():
         # print(_module.__class__)
+        # print(_module.__class__)
         if "FConv2d" in str(_module.__class__):
             fparams += _module.weight.numel() / 1e6
 # print("* F: ", _module, _module.weight.numel())
-        elif "Conv2d" in str(_module.__class__):
+        elif "conv.Conv3d" in str(_module.__class__):
             cparams += _module.weight.numel() / 1e6
             # print("* C: ", _module.__class__, _module.weight.numel())
             if getattr(_module, 'bias', None) is not None:
