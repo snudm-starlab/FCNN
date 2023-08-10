@@ -44,10 +44,10 @@ class FConv2d(torch.nn.Module):
 
         # channel shuffling
         _inds = torch.arange(self.cin)[torch.arange(self.cin)%(sr)==0].to(x.device)
-        out = torch.index_select(out, 2, _inds) # [b, n, c//n, h, w]
+        out = torch.index_select(out, 2, _inds) # [b, n, c//n, h, w] # removing channels
         out = out.transpose(1,2).contiguous()
         out = out.view(out.shape[0], -1, out.shape[3], out.shape[4]) # [b,c,h,w]
-                
+ 
         if self.s==2:
             _inds = torch.arange(self.l)[torch.arange(self.l)%2==0].to(x.device)
             out = torch.index_select(out, 2, _inds)
