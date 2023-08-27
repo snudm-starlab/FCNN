@@ -46,15 +46,15 @@ class FConv2d(torch.nn.Module):
     def forward(self, x):
         l_pad = self.l + self._pad
         t1 = time.time()
-        x_hat = rfftn(x, s=[self.cin, l_pad, l_pad]) # input: [b, cin, l, l]
+        x_hat = fftn(x, s=[self.cin, l_pad, l_pad]) # input: [b, cin, l, l]
         t2 = time.time()
         # print(t2-t1)
-        w_hat = rfftn(self.weight, s=[self.cin, l_pad, l_pad])
+        w_hat = fftn(self.weight, s=[self.cin, l_pad, l_pad])
         # w_hat = self.weight
         freq_out = torch.einsum('bchw,nchw->bnchw', x_hat, w_hat)
         t3 = time.time()
-        out = irfftn(freq_out, s=[l_pad, l_pad]) # .real[:,:,:,_pad:, _pad:] # b,n,c,h,w
-        out = torch.complex(real=out, imag=torch.zeros_like(out))
+        out = ifftn(freq_out, s=[l_pad, l_pad]) # .real[:,:,:,_pad:, _pad:] # b,n,c,h,w
+        # out = torch.complex(real=out, imag=torch.zeros_like(out))
         t4 = time.time()
         # print("****** Type: ", out.dtype, self.wn.dtype)
         out = torch.einsum("cd, bnchw->bndhw", self.wn, out)
