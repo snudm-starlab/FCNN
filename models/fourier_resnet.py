@@ -45,7 +45,8 @@ class FourierBasicBlock(nn.Module):
 
         #the shortcut output dimension is not the same with residual function
         #use 1*1 convolution to match the dimension
-        if stride != 1:
+        # if stride != 1:
+        if out_channels != in_channels:
             self.shortcut = nn.Sequential(
                 FConv2d(length*stride, in_channels, out_channels, num_filters, 
                         stride=stride, kernel_size=1),
