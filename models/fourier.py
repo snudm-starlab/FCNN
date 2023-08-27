@@ -54,6 +54,7 @@ class FConv2d(torch.nn.Module):
         freq_out = torch.einsum('bchw,nchw->bnchw', x_hat, w_hat)
         t3 = time.time()
         out = irfftn(freq_out, s=[l_pad, l_pad]) # .real[:,:,:,_pad:, _pad:] # b,n,c,h,w
+        out = torch.complex(real=out)
         t4 = time.time()
         print("****** Type: ", out.dtype, self.wn.dtype)
         out = torch.einsum("cd, bnchw->bndhw", self.wn, out)
@@ -79,9 +80,9 @@ class FConv2d(torch.nn.Module):
         _sr = (self.n * self.cin) // (self.cout) # shrink ratio
         _inds = torch.arange(self.cin)[torch.arange(self.cin)%(_sr)==0]
         _M = _v @ _v[_inds,:].T
-        _w = torch.exp(torch.complex(real=torch.tensor([0.]), 
+        _ww = torch.exp(torch.complex(real=torch.tensor([0.]), 
                                      imag=torch.tensor([(2*torch.pi)/(self.cin)])))
-        wn = torch.pow(_w, _M) / self.cin # shape: [cin, cin//sr]
+        wn = torch.pow(_ww, _M) / self.cin # shape: [cin, cin//sr]
         return wn
 
 
