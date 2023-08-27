@@ -149,7 +149,8 @@ class FourierResNet(nn.Module):
                                 out_channels // nu, stride, kernel_size=None,
                                 kappa=kappa))
             self.in_channels = out_channels * block.expansion
-        self.length = (self.length+2) // 2 - 2
+        if self.length > 6:
+            self.length = (self.length+2) // 2 - 2
         # def __init__(self, length, in_channels, out_channels, num_filters, stride=1):
         #     super().__init__()
         
