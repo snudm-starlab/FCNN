@@ -34,6 +34,7 @@ class FConv2d(torch.nn.Module):
         self._pad = 2 # self.k//2
         l_pad = self.l + self._pad
         _w = (torch.rand(self.n, self.cin//self.kappa , self.k, self.k) - 0.5) * 2 * _range
+        self.weight = nn.Parameter(_w)
         # w_hat = fftn(_w, s=[self.cin, l_pad, l_pad])
         # self.weight = nn.Parameter(w_hat)        
         """
