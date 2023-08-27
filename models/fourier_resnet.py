@@ -40,6 +40,8 @@ class FourierBasicBlock(nn.Module):
         )
         #shortcut
         self.shortcut = nn.Sequential()
+        self.stride = stride
+        self.length = length
 
         #the shortcut output dimension is not the same with residual function
         #use 1*1 convolution to match the dimension
@@ -59,6 +61,8 @@ class FourierBasicBlock(nn.Module):
         
         # out= nn.ReLU(inplace=True)(self.residual_function(x)
         #                              + self.shortcut(x))
+        # print("* Self.stride: ", self.stride, " | self.length: ", self.length)
+        # print(res1.shape, res2.shape)
         out= nn.ReLU(inplace=True)(res1 + res2)
         
         """
@@ -105,10 +109,10 @@ class FourierResNet(nn.Module):
         super().__init__()
 
         self.in_channels = 64
-        self.length = 32
+        self.length = 30
 
         self.conv1 = nn.Sequential(
-            nn.Conv2d(3, 64, kernel_size=3, padding=1, bias=False),
+            nn.Conv2d(3, 64, kernel_size=3, padding=(0,0), bias=False),
             nn.BatchNorm2d(64),
             nn.ReLU(inplace=True))
         #we use a different inputsize than the original paper
@@ -116,7 +120,7 @@ class FourierResNet(nn.Module):
         self.conv2_x = self._make_layer(block, 64, num_block[0], 1, nu=nu, kappa=kappa)
         self.conv3_x = self._make_layer(block, 128, num_block[1], 2, nu=nu, kappa=kappa)
         self.conv4_x = self._make_layer(block, 256, num_block[2], 2, nu=nu, kappa=kappa)
-        self.conv5_x = self._make_layer(block, 512, num_block[3], 2, nu=nu, kappa=kappa)
+        self.conv5_x = self._make_layer(block, 512, num_block[3], 1, nu=nu, kappa=kappa)
         self.avg_pool = nn.AdaptiveAvgPool2d((1, 1))
         self.fc = nn.Linear(512 * block.expansion, num_classes)
 
@@ -145,7 +149,7 @@ class FourierResNet(nn.Module):
                                 out_channels // nu, stride, kernel_size=None,
                                 kappa=kappa))
             self.in_channels = out_channels * block.expansion
-        self.length = self.length // 2
+        self.length = (self.length+2) // 2 - 2
         # def __init__(self, length, in_channels, out_channels, num_filters, stride=1):
         #     super().__init__()
         

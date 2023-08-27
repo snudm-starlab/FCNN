@@ -26,7 +26,7 @@ class CustomConv3d(nn.Module):
         # nu=2
         self.nu = nu
         self.conv = nn.Conv3d(1, out_channels//nu, (in_channels//kappa, kernel_size, kernel_size), 
-                         stride=(in_channels//kappa, stride,stride), padding=(0,self.k//2,self.k//2),
+                         stride=(in_channels//nu, stride,stride), padding=(0,self.k//2,self.k//2),
                                padding_mode='zeros', bias=bias)
         self.channel_map = torch.zeros(kappa, self.cout//nu) # select kappa -> nu
         ratio = kappa//nu
