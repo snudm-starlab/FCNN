@@ -56,7 +56,7 @@ class FConv2d(torch.nn.Module):
         out = irfftn(freq_out, s=[l_pad, l_pad]) # .real[:,:,:,_pad:, _pad:] # b,n,c,h,w
         out = torch.complex(real=out, imag=torch.zeros_like(out))
         t4 = time.time()
-        print("****** Type: ", out.dtype, self.wn.dtype)
+        # print("****** Type: ", out.dtype, self.wn.dtype)
         out = torch.einsum("cd, bnchw->bndhw", self.wn, out)
         t5 = time.time()
         out = out.real[:,:,:,self._pad:, self._pad:] # b,n,c,h,w
