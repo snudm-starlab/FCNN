@@ -198,7 +198,7 @@ class FourierResNetv2(nn.Module):
         self.conv2_x = self._make_layer(block, 64, num_block[0], 1, nu=nu, kappa=kappa)
         self.conv3_x = self._make_layer(block, 128, num_block[1], 2, nu=nu, kappa=kappa)
         self.conv4_x = self._make_layer(block, 256, num_block[2], 2, nu=nu, kappa=kappa)
-        self.conv5_x = self._make_layer(block, 512, num_block[3], 1, nu=nu, kappa=kappa)
+        self.conv5_x = self._make_layer(block, 512, num_block[3], 2, nu=nu, kappa=kappa)
         self.avg_pool = nn.AdaptiveAvgPool2d((1, 1))
         self.fc = nn.Linear(512 * block.expansion, num_classes)
 
