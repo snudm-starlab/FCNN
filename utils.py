@@ -70,6 +70,12 @@ def get_network(args):
         from models.fourier_resnet import fresnet34
         net = fresnet34(nu=args.nu, kappa=args.kappa)
         ###################################
+    elif args.net == 'fresnetv2_34':
+        ######## Fourier Resnet ###########
+        from models.fresnet_v2 import fresnetv2_34
+        net = fresnetv2_34(nu=args.nu, kappa=args.kappa)
+        # print(net)
+        ###################################
     elif args.net == 'conv3dresnet34':
         ######## Fourier conv3d Resnet ###########
         from models.conv3d_resnet import conv3dresnet34
