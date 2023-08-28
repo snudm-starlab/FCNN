@@ -60,6 +60,7 @@ class FConv2d(torch.nn.Module):
         # out = torch.complex(real=out, imag=torch.zeros_like(out))
         t4 = time.time()
         # print("****** Type: ", out.dtype, self.wn.dtype)
+        # Selection for stride
         out = torch.einsum("cd, bnchw->bndhw", self.wn, out)
         t5 = time.time()
         out = out.real[:,:,:,self._pad:, self._pad:] # b,n,c,h,w
@@ -227,8 +228,8 @@ class FourierResNetv2(nn.Module):
                                 out_channels // nu, stride, kernel_size=None,
                                 kappa=kappa))
             self.in_channels = out_channels * block.expansion
-        if self.length > 6:
-            self.length = (self.length+2) // 2 - 2
+        # if self.length > 6:
+        self.length = (self.length+2) // 2 - 2
         # def __init__(self, length, in_channels, out_channels, num_filters, stride=1):
         #     super().__init__()
         
