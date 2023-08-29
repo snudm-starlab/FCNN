@@ -19,6 +19,7 @@ from torch.utils.data import DataLoader
 from conf import settings
 from utils import get_network, get_test_dataloader
 import numpy as np
+from tqdm import tqdm
 
 if __name__ == '__main__':
 
@@ -56,8 +57,8 @@ if __name__ == '__main__':
     total = 0
 
     with torch.no_grad():
-        for n_iter, (image, label) in enumerate(cifar100_test_loader):
-            print("iteration: {}\ttotal {} iterations".format(n_iter + 1, len(cifar100_test_loader)))
+        for n_iter, (image, label) in tqdm(enumerate(cifar100_test_loader)):
+            # print("iteration: {}\ttotal {} iterations".format(n_iter + 1, len(cifar100_test_loader)))
 
             if args.gpu:
                 image = image.cuda()
@@ -78,9 +79,9 @@ if __name__ == '__main__':
             #compute top1
             correct_1 += correct[:, :1].sum()
 
-    if args.gpu:
-        print('GPU INFO.....')
-        print(torch.cuda.memory_summary(), end='')
+    # if args.gpu:
+        # print('GPU INFO.....')
+        # print(torch.cuda.memory_summary(), end='')
 
     print()
     print("Top 1 err: ", 1 - correct_1 / len(cifar100_test_loader.dataset))
