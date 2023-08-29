@@ -25,8 +25,7 @@ class FConv2d(torch.nn.Module):
         self.l = length
         self.n = num_filters
         self.s = stride
-        self.kappa = kappa
-        
+        self.kappa = kappa        
         
         kernel_size=3
         self.k = kernel_size
@@ -41,7 +40,7 @@ class FConv2d(torch.nn.Module):
                 self.k = self.l//2 + 1
         """
         _range = torch.sqrt(torch.tensor(self.kappa/(self.cin * self.k * self.k)))
-        self._pad = 2 # self.k//2
+        self._pad = self.k//2
         l_pad = self.l + self._pad
         _w = (torch.rand(self.n, self.cin//self.kappa , self.k, self.k) - 0.5) * 2 * _range
         self.weight = nn.Parameter(_w)
@@ -135,13 +134,6 @@ class FourierBasicBlock(nn.Module):
     def forward(self, x):
         res1 = self.residual_function(x)
         res2 = self.shortcut(x)
-
-        # print("* Residual: ", res1.shape, " / shortcut: ", res2.shape)
-        
-        # out= nn.ReLU(inplace=True)(self.residual_function(x)
-        #                              + self.shortcut(x))
-        # print("* Self.stride: ", self.stride, " | self.length: ", self.length)
-        # print(res1.shape, res2.shape)
         out= nn.ReLU(inplace=True)(res1 + res2)
         
         """
@@ -188,10 +180,10 @@ class FourierResNetv2(nn.Module):
         super().__init__()
 
         self.in_channels = 64
-        self.length = 30
+        self.length = 32
 
         self.conv1 = nn.Sequential(
-            nn.Conv2d(3, 64, kernel_size=3, padding=(0,0), bias=False),
+            nn.Conv2d(3, 64, kernel_size=3, padding=(1,1), bias=False),
             nn.BatchNorm2d(64),
             nn.ReLU(inplace=True))
         #we use a different inputsize than the original paper
@@ -229,7 +221,8 @@ class FourierResNetv2(nn.Module):
                                 kappa=kappa))
             self.in_channels = out_channels * block.expansion
         # if self.length > 6:
-        self.length = (self.length+2) // 2 - 2
+        # self.length = (self.length+2) // 2 - 2
+        self.length = self.length // 2
         # def __init__(self, length, in_channels, out_channels, num_filters, stride=1):
         #     super().__init__()
         
