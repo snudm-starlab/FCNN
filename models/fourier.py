@@ -31,6 +31,7 @@ class FConv2d(torch.nn.Module):
                 self.k = self.l//2 + 1
         """
         _range = torch.sqrt(torch.tensor(self.kappa/(self.cin * self.k * self.k)))
+        # self._pad =  self.k//2
         self._pad = 2 # self.k//2
         l_pad = self.l + self._pad
         _w = (torch.rand(self.n, self.cin//self.kappa , self.k, self.k) - 0.5) * 2 * _range
