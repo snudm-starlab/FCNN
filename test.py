@@ -33,7 +33,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     # args.weights = None
     args.gpu = True
-    args.b = 16
+    args.b = 2
     net = get_network(args)
     
     print("* Num params: ", np.sum([_p.numel() for _n, _p in net.named_parameters()])/1e6)
@@ -49,7 +49,7 @@ if __name__ == '__main__':
     )
 
     net.load_state_dict(torch.load(args.weights))
-    print(net)
+    # print(net)
     net.eval()
 
     correct_1 = 0.0
