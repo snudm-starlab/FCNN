@@ -26,17 +26,17 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-net', type=str, required=True, help='net type')
     parser.add_argument('-weights', type=str, required=True, help='the weights file you want to test')
-    parser.add_argument('-nu', type=float, default=4, help='net type')
-    parser.add_argument('-kappa', type=float, default=4, help='net type')
+    parser.add_argument('-kappa', type=float, default=6, help='net type')
+    parser.add_argument('-nu', type=float, default=2, help='net type')
     # parser.add_argument('-gpu', action='store_true', default=False, help='use gpu or not')
     # parser.add_argument('-b', type=int, default=16, help='batch size for dataloader')
     args = parser.parse_args()
     # args.weights = None
     args.gpu = True
-    args.b = 2
+    args.b = 16
     net = get_network(args)
     
-    print("* Num params: ", np.sum([_p.numel() for _n, _p in net.named_parameters()])/1e6)
+    # print("* Num params: ", np.sum([_p.numel() for _n, _p in net.named_parameters()])/1e6)
     # raise Exception
 
 
@@ -84,6 +84,21 @@ if __name__ == '__main__':
         # print(torch.cuda.memory_summary(), end='')
 
     print()
-    print("Top 1 err: ", 1 - correct_1 / len(cifar100_test_loader.dataset))
-    print("Top 5 err: ", 1 - correct_5 / len(cifar100_test_loader.dataset))
-    print("Parameter numbers: {}".format(sum(p.numel() for p in net.parameters())))
+    # print("top 1 err: ", 1 - correct_1 / len(cifar100_test_loader.dataset))
+    print("Accuracy: ", correct_1 / len(cifar100_test_loader.dataset))
+    # print("Top 5 err: ", 1 - correct_5 / len(cifar100_test_loader.dataset))
+    orig_acc = 77.77; orig_params = 21.31; orig_flops=2.3188
+    _acc = (correct_1 / len(cifar100_test_loader.dataset)) * 100
+    _params = np.sum([_p.numel() for _n, _p in net.named_parameters()])/1e6
+    _flops = 0.3772 
+    print("="*30)
+    print("* Original Model")
+    print(f"  + Accuracy: {orig_acc}")
+    print(f"  + Parameters: {orig_params:.2f}M")
+    print(f"  + FLOPs: {orig_flops:.2f}G")
+    print()
+    print("* After compression w/ SRP")
+    print(f"  + Accuracy: {_acc:.2f} ({_acc-orig_acc:.2f})")
+    print(f"  + Parameters: {_params:.2f}M ({orig_params/_params:.2f}x)")
+    print(f"  + FLOPs: {_flops:.2f}G ({orig_flops/_flops:.2f}x)")
+    print("="*30)
