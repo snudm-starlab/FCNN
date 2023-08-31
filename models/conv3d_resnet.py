@@ -23,35 +23,53 @@ class CustomConv3d(nn.Module):
         self.k = kernel_size
         self.stride = stride
         self.kappa = kappa
-        # nu=2
         self.nu = nu
+        # c_pad = (in_channels//kappa - in_channels//nu)//2+1 if kappa < nu else 0
         self.conv = nn.Conv3d(1, out_channels//nu, (in_channels//kappa, kernel_size, kernel_size), 
-                         stride=(in_channels//nu, stride,stride), padding=(0,self.k//2,self.k//2),
+                         stride=(in_channels//kappa, stride,stride), padding= (0,self.k//2,self.k//2),
                                padding_mode='zeros', bias=bias)
-        self.channel_map = torch.zeros(kappa, self.cout//nu) # select kappa -> nu
         ratio = kappa//nu
+        _inds = []
+        _c = -1 
+        for _n in range(nu):
+            for _r in range(self.cout//nu):
+                _c = (_c+1) % kappa
+                _inds.append(_r * kappa + _c)
+        self._inds = torch.tensor(_inds).cuda()
+        """
+        ratio = kappa//nu
+        self.channel_map = torch.zeros(kappa, self.cout//nu) # select kappa -> nu
+
         for r in range(kappa):
             for c in range(self.cout//nu):
                 if (r+c)%(ratio)==0:
                     self.channel_map[r][c] = 1
-        self.channel_map = self.channel_map.bool()
+        self.channel_map = self.channel_map.bool().cuda()
+        """
 
-        
-        """
-        self.conv = nn.Conv3d(1, out_channels//nu, (in_channels//kappa, kernel_size, kernel_size), 
-                         stride=(in_channels//nu, stride,stride), padding=(0,self.k//2,self.k//2),
-                               padding_mode='zeros', bias=bias)
-        """
     def forward(self, x):
         bs, cin, L, _ = x.shape
         L_tilde = L // self.stride
-        out = self.conv(x.view(bs, 1, cin, L, L))
+        out = self.conv(x.view(bs, 1, cin, L, L)) # bs, cout//nu, kappa, L, L 
+        out = out.view(bs, -1, L_tilde, L_tilde)    
+        # print("Before selection: ", out.shape)
+        # Channel Selection
+        out = out[:, self._inds , :,:] # (cin//nu*kappa --> cin)
+        # print("After selection: ", out.shape)
+        return out
+    """
+    def forward(self, x):
+        bs, cin, L, _ = x.shape
+        L_tilde = L // self.stride
+        out = self.conv(x.view(bs, 1, cin, L, L)) # bs, cout//nu, kappa, L, L 
         # Channel shuffling
-        out = out.transpose(1,2).contiguous() # (bs, cout//nu, nu, L, L) --> (bs, nu, cout//nu, L, L)
-        out = out[:,self.channel_map, :,:]
+        # (bs, cout//nu, kappa, L, L) --> (bs, kappa, cout//nu, L, L)
+        out = out.transpose(1,2).contiguous() 
+        # (bs, kappa, cout//nu, L, L) --> (bs, nu, cout//nu, L, L)
+        out = out[:,self.channel_map, :,:] # cin --> nu
         out = out.view(bs, -1, L_tilde, L_tilde)    
         return out
-
+    """
 
 class Conv3dBasicBlock(nn.Module):
     """Basic Block for resnet 18 and resnet 34
@@ -216,7 +234,7 @@ def conv3dfresnet18():
     """
     return Conv3dResNet(Conv3dBasicBlock, [2, 2, 2, 2])
 
-def conv3dresnet34(nu=16, kappa=4):
+def conv3dresnet34(nu=6, kappa=2):
     """ return a ResNet 34 object
     """
     return Conv3dResNet(Conv3dBasicBlock, [3, 4, 6, 3], nu=nu, kappa=kappa)
