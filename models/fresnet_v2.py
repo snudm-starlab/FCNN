@@ -83,6 +83,8 @@ class FConv2d(torch.nn.Module):
         _sr = (self.n * self.cin) // (self.cout) # shrink ratio
         _inds = torch.arange(self.cin)[torch.arange(self.cin)%(_sr)==0]
         _M = _v @ _v[_inds,:].T
+
+        # Generate Wn for the IFFT
         _ww = torch.exp(torch.complex(real=torch.tensor([0.]), 
                                      imag=torch.tensor([(2*torch.pi)/(self.cin)])))
         wn = torch.pow(_ww, _M) / self.cin # shape: [cin, cin//sr]
