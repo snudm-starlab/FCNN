@@ -113,7 +113,7 @@ def eval_training(epoch=0, tb=True):
     #     print('GPU INFO.....')
     #     print(torch.cuda.memory_summary(), end='')
     # print('Evaluating Network.....')
-    if epoch%2==0:
+    if True: #epoch%2==0:
         print('Test Result: Epoch: {}, Average loss: {:.4f}, Accuracy: {:.4f}, Time consumed:{:.2f}s'.format(
             epoch,
             test_loss / len(cifar100_test_loader.dataset),
@@ -139,8 +139,8 @@ if __name__ == '__main__':
     parser.add_argument('-lr', type=float, default=0.1, help='initial learning rate')
     parser.add_argument('-alpha', type=float, default=-1, help='balance coefficient for knowledge distillation')
     parser.add_argument('-tau', type=float, default=2.0, help='temperature of the softmax for knowledge distillation')
-    parser.add_argument('-nu', type=int, default=16, help='Coefficient for choosing the number of filters')
-    parser.add_argument('-kappa', type=int, default=4, help='Coefficient for choosing kenel size')
+    parser.add_argument('-nu', type=int, default=8, help='Coefficient for choosing the number of filters')
+    parser.add_argument('-kappa', type=int, default=2, help='Coefficient for choosing kenel size')
     parser.add_argument('-resume', action='store_true', default=False, help='resume training')
     args = parser.parse_args()
 
@@ -199,43 +199,7 @@ if __name__ == '__main__':
 
     ######################### Print Params ################################
     num_params = np.sum([_p.numel() for _p in net.parameters()])
-    fparams = 0; cparams = 0; bparams = 0; lparams = 0
-    # print(net.modules)
-
-    for _module in net.modules():
-        # print(_module.__class__)
-        # print(_module.__class__)
-        if "FConv2d" in str(_module.__class__):
-            fparams += _module.weight.numel() / 1e6
-# print("* F: ", _module, _module.weight.numel())
-        elif "conv.Conv3d" in str(_module.__class__):
-            cparams += _module.weight.numel() / 1e6
-            # print("* C: ", _module.__class__, _module.weight.numel())
-            if getattr(_module, 'bias', None) is not None:
-                cparams += _module.bias.numel() / 1e6
-                # print("================================ bias!!")
-        elif "BatchNorm" in str(_module.__class__):
-            bparams += _module.weight.numel() / 1e6
-            # print("* B: ", _module.__class__, _module.weight.numel())
-            if getattr(_module, 'bias', None) is not None:
-                bparams += _module.bias.numel() / 1e6
-                # print("================================ bias!!")
-        elif "Linear" in str(_module.__class__):
-            lparams += _module.weight.numel() / 1e6
-            # print("* L: ", _module.__class__, _module.weight.numel())
-            if getattr(_module, 'bias', None) is not None:
-                lparams += _module.bias.numel() / 1e6
-                # print("================================ bias!!")
-
-    print(f"** # Params: {fparams+cparams+bparams+lparams:.5f}M")
-    print(f"**** Fourier: {fparams:.3f} | Conv: {cparams:.3f} |",
-          f"BN: {bparams:.3f} | Lin: {lparams:.3f}")
-
     print("# Params: ", num_params /1e6, "M")
-    # raise Exception("Exception for test")
-    # print(net)
-    # for _n, _p in net.named_parameters():
-    #     print(_n, _p.numel())
     # print(net)
     #######################################################################
 
@@ -302,9 +266,7 @@ if __name__ == '__main__':
     print("="*50)
     print(args)
     print("*** Best acc: ", best_acc)
-    print(f"** # Params: {fparams+cparams+bparams+lparams:.5f}M")
-    print(f"**** Fourier: {fparams:.3f} | Conv: {cparams:.3f} |",
-          f"BN: {bparams:.3f} | Lin: {lparams:.3f}")
+    print(f"** # Params: {num_params:.5f}M")
     print("="*50)
 
     writer.close()
