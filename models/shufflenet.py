@@ -1,7 +1,4 @@
 """shufflenet in pytorch
-
-
-
 [1] Xiangyu Zhang, Xinyu Zhou, Mengxiao Lin, Jian Sun.
 
     ShuffleNet: An Extremely Efficient Convolutional Neural Network for Mobile Devices
@@ -231,7 +228,6 @@ class ShuffleNet(nn.Module):
             return a shuffle net stage
         """
         strides = [stride] + [1] * (num_blocks - 1)
-
         stage = []
 
         for stride in strides:
@@ -245,12 +241,7 @@ class ShuffleNet(nn.Module):
                 )
             )
             self.input_channels = output_channels
-
         return nn.Sequential(*stage)
 
 def shufflenet():
     return ShuffleNet([4, 8, 4])
-
-
-
-

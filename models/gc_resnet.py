@@ -11,91 +11,143 @@
 from re import I
 import torch
 import torch.nn as nn
-from models.fourier import *
 
+class ChannelShuffle(nn.Module):
 
-class CustomConv3d(nn.Module):
-    def __init__(self, kernel_size, in_channels, out_channels, stride, bias=False,
-                 kappa=4, nu=4):
+    def __init__(self, groups):
         super().__init__()
-        self.cin = in_channels
-        self.cout = out_channels
-        self.k = kernel_size
-        self.stride = stride
-        self.kappa = kappa
-        self.nu = nu
-        # c_pad = (in_channels//kappa - in_channels//nu)//2+1 if kappa < nu else 0
-        self.conv = nn.Conv3d(1, out_channels//nu, (in_channels//kappa, kernel_size, kernel_size), 
-                         stride=(in_channels//kappa, stride,stride), padding= (0,self.k//2,self.k//2),
-                               padding_mode='zeros', bias=bias)
-        ratio = kappa//nu
-        _inds = []
-        _c = -1 
-        for _n in range(nu):
-            for _r in range(self.cout//nu):
-                _c = (_c+1) % kappa
-                _inds.append(_r * kappa + _c)
-        self._inds = torch.tensor(_inds).cuda()
-        """
-        ratio = kappa//nu
-        self.channel_map = torch.zeros(kappa, self.cout//nu) # select kappa -> nu
-
-        for r in range(kappa):
-            for c in range(self.cout//nu):
-                if (r+c)%(ratio)==0:
-                    self.channel_map[r][c] = 1
-        self.channel_map = self.channel_map.bool().cuda()
-        """
+        self.groups = groups
 
     def forward(self, x):
-        bs, cin, L, _ = x.shape
-        L_tilde = L // self.stride
-        out = self.conv(x.view(bs, 1, cin, L, L)) # bs, cout//nu, kappa, L, L 
-        out = out.view(bs, -1, L_tilde, L_tilde)    
-        # print("Before selection: ", out.shape)
-        # Channel Selection
-        out = out[:, self._inds , :,:] # (cin//nu*kappa --> cin)
-        # print("After selection: ", out.shape)
-        return out
-    """
+        batchsize, channels, height, width = x.data.size()
+        # print(channels, channels.item())
+        # channels_per_group = int(channels / self.groups)
+        channels_per_group = channels // self.groups
+
+        #"""suppose a convolutional layer with g groups whose output has
+        #g x n channels; we first reshape the output channel dimension
+        #into (g, n)"""
+        x = x.view(batchsize, self.groups, channels_per_group, height, width)
+
+        #"""transposing and then flattening it back as the input of next layer."""
+        x = x.transpose(1, 2).contiguous()
+        x = x.view(batchsize, -1, height, width)
+
+        return x
+
+class DepthwiseConv2d(nn.Module):
+
+    def __init__(self, input_channels, output_channels, kernel_size, **kwargs):
+        super().__init__()
+        self.depthwise = nn.Sequential(
+            nn.Conv2d(input_channels, output_channels, kernel_size, **kwargs),
+            nn.BatchNorm2d(output_channels)
+        )
+
     def forward(self, x):
-        bs, cin, L, _ = x.shape
-        L_tilde = L // self.stride
-        out = self.conv(x.view(bs, 1, cin, L, L)) # bs, cout//nu, kappa, L, L 
-        # Channel shuffling
-        # (bs, cout//nu, kappa, L, L) --> (bs, kappa, cout//nu, L, L)
-        out = out.transpose(1,2).contiguous() 
-        # (bs, kappa, cout//nu, L, L) --> (bs, nu, cout//nu, L, L)
-        out = out[:,self.channel_map, :,:] # cin --> nu
-        out = out.view(bs, -1, L_tilde, L_tilde)    
-        return out
+        return self.depthwise(x)
+
+class PointwiseConv2d(nn.Module):
+    def __init__(self, input_channels, output_channels, **kwargs):
+        super().__init__()
+        self.pointwise = nn.Sequential(
+            nn.Conv2d(input_channels, output_channels, 1, **kwargs),
+            nn.BatchNorm2d(output_channels)
+        )
+
+    def forward(self, x):
+        return self.pointwise(x)
+
+class GC2d(nn.Module):
+
+    def __init__(self, input_channels, output_channels, stage, stride, nu):
+        super().__init__()
+
+        #"""Similar to [9], we set the number of bottleneck channels to 1/4
+        #of the output channels for each ShuffleNet unit."""
+        self.bottlneck = nn.Sequential(
+            PointwiseConv2d(
+                input_channels,
+                int(output_channels / 4),
+                # output_channels,
+                groups=nu
+            ),
+            nn.ReLU()
+        )
+
+        #"""Note that for Stage 2, we do not apply group convolution on the first pointwise
+        #layer because the number of input channels is relatively small."""
+        if stage == 2:
+            self.bottlneck = nn.Sequential(
+                PointwiseConv2d(
+                    input_channels,
+                    int(output_channels / 4),
+                    # output_channels,
+                    groups=nu
+                ),
+                nn.ReLU()
+            )
+
+        self.channel_shuffle = ChannelShuffle(nu)
+
+        self.depthwise = DepthwiseConv2d(
+            # output_channels,
+            # output_channels,
+            int(output_channels / 4),
+            int(output_channels / 4),
+            3,
+            groups=int(output_channels / 4),
+            groups=output_channels,
+            stride=stride,
+            padding=1
+        )
+
+        self.expand = PointwiseConv2d(
+            int(output_channels / 4),
+            output_channels,
+            # output_channels,
+            groups=nu
+        )
+
+        # self.relu = nn.ReLU()
+
+    def _add(self, x, y):
+        return torch.add(x, y)
+
+    def _cat(self, x, y):
+        return torch.cat([x, y], dim=1)
+
+    def forward(self, x):
+        # shortcut = self.shortcut(x)
+
+        shuffled = self.bottlneck(x)
+        shuffled = self.channel_shuffle(shuffled)
+        shuffled = self.depthwise(shuffled)
+        shuffled = self.expand(shuffled)
+
+        # output = self.fusion(shortcut, shuffled)
+        # output = self.relu(output)
+        # output = self.relu(shuffled)
+        output = shuffled
+        return output
+
+class GCBasicBlock(nn.Module):
     """
-
-class Conv3dBasicBlock(nn.Module):
-    """Basic Block for resnet 18 and resnet 34
-
+    Basic Block for resnet 18 and resnet 34
     """
-
-    #BasicBlock and BottleNeck block
-    #have different output size
-    #we use class attribute expansion
-    #to distinct
     expansion = 1
 
     def __init__(self,in_channels, out_channels, stride=1,
-                 kernel_size=3, kappa=4, nu=4):
+                 kernel_size=3, nu=4):
         super().__init__()
         
         #residual function
         self.residual_function = nn.Sequential(
-            CustomConv3d(kernel_size, in_channels, out_channels, 
-                    stride=stride, kappa=kappa, nu=nu),
-            nn.BatchNorm2d(out_channels),
+            GC2d(in_channels, out_channels, kernel_size, 
+                    stride=stride, nu=nu),
             nn.ReLU(inplace=True),
-            CustomConv3d(kernel_size, out_channels, out_channels, 
-                    stride=1, kappa=kappa, nu=nu),
-            # FConv2d(L, C*N, 1, stride=1),
-            nn.BatchNorm2d(out_channels),
+            GC2d(out_channels, out_channels, kernel_size,
+                    stride=1, nu=nu),
         )
         #shortcut
         self.shortcut = nn.Sequential()
@@ -104,66 +156,20 @@ class Conv3dBasicBlock(nn.Module):
         #use 1*1 convolution to match the dimension
         if stride != 1:
             self.shortcut = nn.Sequential(
-                # FConv2d(length*stride, in_channels, out_channels, num_filters, 
-                #         stride=stride, kernel_size=1),
-                CustomConv3d(1, in_channels, out_channels, 
-                    stride=stride, kappa=kappa, nu=nu),
-                # nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=stride, bias=False),
+                nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=stride, bias=False),
                 nn.BatchNorm2d(out_channels)
             )
 
     def forward(self, x):
         res1 = self.residual_function(x)
-        # print("_____________________________ Beftore Shrotcut Ends ! ______________")
-        res2 = self.shortcut(x)
-
-        # print("* Residual: ", res1.shape, " / shortcut: ", res2.shape)
-        
-        # out= nn.ReLU(inplace=True)(self.residual_function(x)
-        #                              + self.shortcut(x))
+        res2 = self.shortcut(x)        
         out= nn.ReLU(inplace=True)(res1 + res2)
         
-        """
-        xx = (self.fc1(x) + self.fc2(x) + self.fc3(x))/3
-        out = (nn.ReLU(inplace=True)(self.fc4(xx) + self.shortcut(x)) + 
-              nn.ReLU(inplace=True)(self.fc5(xx) + self.shortcut(x)) + 
-              nn.ReLU(inplace=True)(self.fc6(xx) + self.shortcut(x))) / 3
-        """
         return out
 
-class Conv3dBottleNeck(nn.Module):
-    # TODO: Unimplemented
-    """Residual block for resnet over 50 layers
+class GCResNet(nn.Module):
 
-    """
-    expansion = 4
-    def __init__(self, in_channels, out_channels, stride=1):
-        super().__init__()
-        self.residual_function = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, kernel_size=1, bias=False),
-            nn.BatchNorm2d(out_channels),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(out_channels, out_channels, stride=stride, kernel_size=3, padding=1, bias=False),
-            nn.BatchNorm2d(out_channels),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(out_channels, out_channels * BottleNeck.expansion, kernel_size=1, bias=False),
-            nn.BatchNorm2d(out_channels * BottleNeck.expansion),
-        )
-
-        self.shortcut = nn.Sequential()
-
-        if stride != 1 or in_channels != out_channels * BottleNeck.expansion:
-            self.shortcut = nn.Sequential(
-                nn.Conv2d(in_channels, out_channels * BottleNeck.expansion, stride=stride, kernel_size=1, bias=False),
-                nn.BatchNorm2d(out_channels * BottleNeck.expansion)
-            )
-
-    def forward(self, x):
-        return nn.ReLU(inplace=True)(self.residual_function(x) + self.shortcut(x))
-
-class Conv3dResNet(nn.Module):
-
-    def __init__(self, block, num_block, num_classes=100, nu=16, kappa=4):
+    def __init__(self, block, num_block, num_classes=100, nu=4):
         super().__init__()
 
         self.in_channels = 64
@@ -175,15 +181,16 @@ class Conv3dResNet(nn.Module):
             nn.ReLU(inplace=True))
         #we use a different inputsize than the original paper
         #so conv2_x's stride is 1
-        self.conv2_x = self._make_layer(block, 64, num_block[0], 1, nu=nu, kappa=kappa)
-        self.conv3_x = self._make_layer(block, 128, num_block[1], 2, nu=nu, kappa=kappa)
-        self.conv4_x = self._make_layer(block, 256, num_block[2], 2, nu=nu, kappa=kappa)
-        self.conv5_x = self._make_layer(block, 512, num_block[3], 2, nu=nu, kappa=kappa)
+        self.conv2_x = self._make_layer(block, 64, num_block[0], 1, nu=nu)
+        self.conv3_x = self._make_layer(block, 128, num_block[1], 2, nu=nu)
+        self.conv4_x = self._make_layer(block, 256, num_block[2], 2, nu=nu)
+        self.conv5_x = self._make_layer(block, 512, num_block[3], 2, nu=nu)
         self.avg_pool = nn.AdaptiveAvgPool2d((1, 1))
         self.fc = nn.Linear(512 * block.expansion, num_classes)
 
-    def _make_layer(self, block, out_channels, num_blocks, stride, nu, kappa):
-        """make resnet layers(by layer i didnt mean this 'layer' was the
+    def _make_layer(self, block, out_channels, num_blocks, stride, nu):
+        """
+        make resnet layers(by layer i didnt mean this 'layer' was the
         same as a neuron netowork layer, ex. conv layer), one layer may
         contain more than one residual block
 
@@ -203,41 +210,38 @@ class Conv3dResNet(nn.Module):
         layers = []
         # def __init__(self, L, C, N, stride=1):
         for stride in strides:
-            layers.append(block(self.in_channels, out_channels, stride=stride, 
-                                kernel_size=3, kappa=kappa, nu=nu))
+            layers.append(block(self.in_channels, out_channels, 
+                                stride=stride, kernel_size=3, nu=nu))
             self.in_channels = out_channels * block.expansion
-        self.length = self.length // 2
-        # def __init__(self,in_channels, out_channels, stride=1,
-        #          kernel_size=3, kappa=4, nu=4):
-        
+        self.length = self.length // 2 
         return nn.Sequential(*layers)
 
     def forward(self, x):
         output = self.conv1(x)
-        # print("**************** Conv1 Ends!")
         output = self.conv2_x(output)
-        # print("**************** Conv2 Ends!")
         output = self.conv3_x(output)
-        # print("**************** Conv3 Ends!")
         output = self.conv4_x(output)
-        # print("**************** Conv4 Ends!")
         output = self.conv5_x(output)
-        # print("**************** Conv5 Ends!")
         output = self.avg_pool(output)
         output = output.view(output.size(0), -1)
         output = self.fc(output)
-
         return output
 
-def conv3dfresnet18():
-    """ return a ResNet 18 object
+def gcfresnet18():
+    """ return a GCResNet 18 object
     """
-    return Conv3dResNet(Conv3dBasicBlock, [2, 2, 2, 2])
+    return GCResNet(GCBasicBlock, [2, 2, 2, 2])
 
-def conv3dresnet34(nu=6, kappa=2):
-    """ return a ResNet 34 object
+def gcresnet34(nu):
+    """ return a GCResNet 34 object
     """
-    return Conv3dResNet(Conv3dBasicBlock, [3, 4, 6, 3], nu=nu, kappa=kappa)
+    return GCResNet(GCBasicBlock, [3, 4, 6, 3], nu=nu)
+
+def gcresnet50(nu):
+    """ return a GCResNet 50 object
+    """
+    return GCResNet(GCBasicBlock, [3, 4, 6, 3], nu=nu)
+
 '''
 def resnet50():
     """ return a ResNet 50 object
