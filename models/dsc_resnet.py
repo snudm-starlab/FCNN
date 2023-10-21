@@ -13,7 +13,6 @@ import torch
 import torch.nn as nn
 
 class DSC2d(nn.Module):
-
     def __init__(self, input_channels, output_channels, kernel_size, stride, **kwargs):
         super().__init__()
         self.depthwise = nn.Sequential(

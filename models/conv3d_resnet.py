@@ -11,7 +11,6 @@
 from re import I
 import torch
 import torch.nn as nn
-from models.fourier import *
 
 
 class CustomConv3d(nn.Module):
@@ -106,9 +105,9 @@ class Conv3dBasicBlock(nn.Module):
             self.shortcut = nn.Sequential(
                 # FConv2d(length*stride, in_channels, out_channels, num_filters, 
                 #         stride=stride, kernel_size=1),
-                CustomConv3d(1, in_channels, out_channels, 
-                    stride=stride, kappa=kappa, nu=nu),
-                # nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=stride, bias=False),
+                # CustomConv3d(1, in_channels, out_channels, 
+                #     stride=stride, kappa=kappa, nu=nu),
+                nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=stride, bias=False),
                 nn.BatchNorm2d(out_channels)
             )
 
