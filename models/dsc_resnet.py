@@ -11,7 +11,6 @@
 from re import I
 import torch
 import torch.nn as nn
-from models.fourier import *
 
 class DSC2d(nn.Module):
 
@@ -24,6 +23,7 @@ class DSC2d(nn.Module):
                 kernel_size,
                 groups=input_channels,
                 stride=stride,
+                padding=kernel_size//2,
                 **kwargs),
             nn.BatchNorm2d(input_channels),
             nn.ReLU(inplace=True)
@@ -40,7 +40,7 @@ class DSC2d(nn.Module):
         x = self.pointwise(x)
         return x
 
-class BasicBlock(nn.Module):
+class DSCBasicBlock(nn.Module):
     """
     Basic Block for resnet 18 and resnet 34
     """
@@ -52,7 +52,7 @@ class BasicBlock(nn.Module):
         
         #residual function
         self.residual_function = nn.Sequential(
-            DSC2d(n_channels, out_channels, kernel_size, 
+            DSC2d(in_channels, out_channels, kernel_size, 
                     stride=stride),
             nn.ReLU(inplace=True),
             DSC2d(out_channels, out_channels, kernel_size,
@@ -139,12 +139,12 @@ class DSCResNet(nn.Module):
 def dscfresnet18():
     """ return a DSCResNet 18 object
     """
-    return DSCResNet(Conv3dBasicBlock, [2, 2, 2, 2])
+    return DSCResNet(DSCBasicBlock, [2, 2, 2, 2])
 
 def dscresnet34():
     """ return a DSCResNet 34 object
     """
-    return DSCResNet(Conv3dBasicBlock, [3, 4, 6, 3])
+    return DSCResNet(DSCBasicBlock, [3, 4, 6, 3])
 
 '''
 def resnet50():
