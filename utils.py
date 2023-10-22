@@ -22,10 +22,18 @@ def get_network(args):
     if args.net == 'resnet34':
         from models.resnet import resnet34
         net = resnet34()
+
+    elif args.net == 'mobilenetv2':
+        from models.mobilenetv2 import mobilenetv2
+        net = mobilenetv2()
     
-    elif args.net == 'conv3dresnet34':
-        from models.conv3d_resnet import conv3dresnet34
-        net = conv3dresnet34(nu=args.nu, kappa=args.kappa)
+    elif args.net == 'fmobilenetv2':
+        from models.mobilenetv2 import fmobilenetv2
+        net = fmobilenetv2(dfirst=False)
+ 
+    elif args.net == 'fcnn34':
+        from models.fcnn import fcnn34
+        net = fcnn34(nu=args.nu, rho=args.rho)
 
     elif args.net == 'dscresnet34':
         from models.dsc_resnet import dscresnet34
