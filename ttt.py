@@ -266,7 +266,7 @@ if __name__ == '__main__':
     print("="*50)
     print(args)
     print("*** Best acc: ", best_acc)
-    print(f"** # Params: {num_params:.5f}M")
+    print(f"** # Params: {num_params/1e6:.5f}M")
     print("="*50)
 
     writer.close()
