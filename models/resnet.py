@@ -77,16 +77,53 @@ class BottleNeck(nn.Module):
     def forward(self, x):
         return nn.ReLU(inplace=True)(self.residual_function(x) + self.shortcut(x))
 
+class InvBottleNeck(nn.Module):
+    """Inverted Residual block for resnet over 50 layers
+
+    """
+    expansion = 4
+    def __init__(self, in_channels, out_channels, stride=1):
+        super().__init__()
+        mid_channels = in_channels * BottleNeck.expansion
+        self.residual_function = nn.Sequential(
+            nn.Conv2d(in_channels, mid_channels, kernel_size=1, bias=False),
+            nn.BatchNorm2d(mid_channels),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(mid_channels, mid_channels, stride=stride, kernel_size=3, padding=1, bias=False),
+            nn.BatchNorm2d(mid_channels),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(mid_channels, out_channels, kernel_size=1, bias=False),
+            nn.BatchNorm2d(out_channels),
+        )
+
+        self.shortcut = nn.Sequential()
+
+        if stride != 1 or in_channels != out_channels:
+            self.shortcut = nn.Sequential(
+                nn.Conv2d(in_channels, out_channels, 
+                          stride=stride, kernel_size=1, bias=False),
+                nn.BatchNorm2d(out_channels)
+            )
+
+    def forward(self, x):
+        # No ReLU at last
+        return self.residual_function(x) + self.shortcut(x)
+
 class ResNet(nn.Module):
 
-    def __init__(self, block, num_block, num_classes=100):
+    def __init__(self, block, num_block, num_classes=100, _inv=False):
         super().__init__()
+        
+        self._inv = _inv
+        if self._inv:
+            self.in_channels = 16
+        else:
+            self.in_channels = 64
 
-        self.in_channels = 64
 
         self.conv1 = nn.Sequential(
-            nn.Conv2d(3, 64, kernel_size=3, padding=1, bias=False),
-            nn.BatchNorm2d(64),
+            nn.Conv2d(3, self.in_channels, kernel_size=3, padding=1, bias=False),
+            nn.BatchNorm2d(self.in_channels),
             nn.ReLU(inplace=True))
         #we use a different inputsize than the original paper
         #so conv2_x's stride is 1
@@ -95,7 +132,10 @@ class ResNet(nn.Module):
         self.conv4_x = self._make_layer(block, 256, num_block[2], 2)
         self.conv5_x = self._make_layer(block, 512, num_block[3], 2)
         self.avg_pool = nn.AdaptiveAvgPool2d((1, 1))
-        self.fc = nn.Linear(512 * block.expansion, num_classes)
+        if self._inv:
+            self.fc = nn.Linear(512 // block.expansion, num_classes)
+        else:
+            self.fc = nn.Linear(512 * block.expansion, num_classes)
 
     def _make_layer(self, block, out_channels, num_blocks, stride):
         """make resnet layers(by layer i didnt mean this 'layer' was the
@@ -116,9 +156,15 @@ class ResNet(nn.Module):
         # could be 1 or 2, other blocks would always be 1
         strides = [stride] + [1] * (num_blocks - 1)
         layers = []
-        for stride in strides:
+        if self._inv:
+            out_channels = out_channels // 4
+        for i, stride in enumerate(strides):                
+            # print("* ", self.in_channels, "->", out_channels)
             layers.append(block(self.in_channels, out_channels, stride))
-            self.in_channels = out_channels * block.expansion
+            if self._inv:
+                self.in_channels = out_channels
+            else:
+                self.in_channels = out_channels * block.expansion
 
         return nn.Sequential(*layers)
 
@@ -148,6 +194,11 @@ def resnet50():
     """ return a ResNet 50 object
     """
     return ResNet(BottleNeck, [3, 4, 6, 3])
+
+def invresnet50():
+    """ return a ResNet 50 object
+    """
+    return ResNet(InvBottleNeck, [3, 4, 6, 3], _inv=True)
 
 def resnet101():
     """ return a ResNet 101 object
