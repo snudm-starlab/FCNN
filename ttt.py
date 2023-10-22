@@ -140,7 +140,7 @@ if __name__ == '__main__':
     parser.add_argument('-alpha', type=float, default=-1, help='balance coefficient for knowledge distillation')
     parser.add_argument('-tau', type=float, default=2.0, help='temperature of the softmax for knowledge distillation')
     parser.add_argument('-nu', type=int, default=8, help='Coefficient for choosing the number of filters')
-    parser.add_argument('-kappa', type=int, default=2, help='Coefficient for choosing kenel size')
+    parser.add_argument('-rho', type=int, default=2, help='Coefficient for choosing kenel size')
     parser.add_argument('-resume', action='store_true', default=False, help='resume training')
     args = parser.parse_args()
 
