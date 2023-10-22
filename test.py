@@ -20,20 +20,21 @@ from conf import settings
 from utils import get_network, get_test_dataloader
 import numpy as np
 from tqdm import tqdm
+from flops_counter import get_flops
 
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-net', type=str, required=True, help='net type')
     parser.add_argument('-weights', type=str, required=True, help='the weights file you want to test')
-    parser.add_argument('-kappa', type=float, default=6, help='net type')
-    parser.add_argument('-nu', type=float, default=2, help='net type')
+    parser.add_argument('-rho', type=float, default=6, help='width')
+    parser.add_argument('-nu', type=float, default=2, help='sharing')
     # parser.add_argument('-gpu', action='store_true', default=False, help='use gpu or not')
     # parser.add_argument('-b', type=int, default=16, help='batch size for dataloader')
     args = parser.parse_args()
     # args.weights = None
     args.gpu = True
-    args.b = 16
+    args.b = 10
     net = get_network(args)
     
     # print("* Num params: ", np.sum([_p.numel() for _n, _p in net.named_parameters()])/1e6)
@@ -49,56 +50,43 @@ if __name__ == '__main__':
     )
 
     net.load_state_dict(torch.load(args.weights))
-    # print(net)
     net.eval()
 
-    correct_1 = 0.0
-    correct_5 = 0.0
+    correct = 0.0
     total = 0
 
     with torch.no_grad():
-        for n_iter, (image, label) in tqdm(enumerate(cifar100_test_loader)):
-            # print("iteration: {}\ttotal {} iterations".format(n_iter + 1, len(cifar100_test_loader)))
-
+        # for n_iter, (image, label) in tqdm(enumerate(cifar100_test_loader)):
+        for n_iter, (image, label) in enumerate(cifar100_test_loader):
             if args.gpu:
                 image = image.cuda()
                 label = label.cuda()
-                # print('GPU INFO.....')
-                # print(torch.cuda.memory_summary(), end='')
-
 
             output = net(image)
-            _, pred = output.topk(5, 1, largest=True, sorted=True)
+            pred = output.argmax(dim=1)
+            # print(f"* ({n_iter}) truth labels:", label)
+            # print(f"* ({n_iter}) predicted labels:", pred, "\n")
+            correct += pred.eq(label).float().sum()
 
-            label = label.view(label.size(0), -1).expand_as(pred)
-            correct = pred.eq(label).float()
-
-            #compute top 5
-            correct_5 += correct[:, :5].sum()
-
-            #compute top1
-            correct_1 += correct[:, :1].sum()
-
-    # if args.gpu:
-        # print('GPU INFO.....')
-        # print(torch.cuda.memory_summary(), end='')
+    _acc = correct / len(cifar100_test_loader.dataset) * 100
 
     print()
-    # print("top 1 err: ", 1 - correct_1 / len(cifar100_test_loader.dataset))
-    print("Accuracy: ", correct_1 / len(cifar100_test_loader.dataset))
-    # print("Top 5 err: ", 1 - correct_5 / len(cifar100_test_loader.dataset))
-    orig_acc = 77.77; orig_params = 21.31; orig_flops=2.3188
-    _acc = (correct_1 / len(cifar100_test_loader.dataset)) * 100
+    orig_acc = 77.77; orig_params = 21.33; orig_flops=2.32043
+
     _params = np.sum([_p.numel() for _n, _p in net.named_parameters()])/1e6
-    _flops = 0.3772 
-    print("="*30)
+    _flops = get_flops(net, args, imagenet=False)
+    print("="*30)    
+    """
     print("* Original Model")
-    print(f"  + Accuracy: {orig_acc}")
-    print(f"  + Parameters: {orig_params:.2f}M")
-    print(f"  + FLOPs: {orig_flops:.2f}G")
-    print()
-    print("* After compression w/ SRP")
+    print(f"  + Accuracy: {_acc:.2f}")
+    print(f"  + Parameters: {_params:.2f}M")
+    print(f"  + FLOPs: {_flops:.2f}G")
+    """
+    # print()
+    
+    print("* After compression w/ FCNN")
     print(f"  + Accuracy: {_acc:.2f} ({_acc-orig_acc:.2f})")
     print(f"  + Parameters: {_params:.2f}M ({orig_params/_params:.2f}x)")
     print(f"  + FLOPs: {_flops:.2f}G ({orig_flops/_flops:.2f}x)")
+    
     print("="*30)
