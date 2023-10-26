@@ -19,18 +19,17 @@ import torch.nn.functional as F
 import torch.optim as optim
 import torchvision
 import torchvision.transforms as transforms
+import random
 
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from models.resnet import *
 
 from conf import settings
-from flops_counter import get_flops
 from utils import get_network, get_training_dataloader, get_test_dataloader, WarmUpLR, \
-    most_recent_folder, most_recent_weights, last_epoch, best_acc_weights
+    most_recent_folder, most_recent_weights, last_epoch, best_acc_weights, get_flops
 
 def train(epoch):
-
     start = time.time()
     net.train()
     for batch_index, (images, labels) in tqdm(enumerate(cifar100_training_loader)):
@@ -51,27 +50,17 @@ def train(epoch):
                     reduction='batchmean'
                     ) * (args.tau * args.tau)
             loss = args.alpha * kl_div + (1-args.alpha) * loss 
-
         loss.backward()
         optimizer.step()
 
         n_iter = (epoch - 1) * len(cifar100_training_loader) + batch_index + 1
-
+        
         last_layer = list(net.children())[-1]
         for name, para in last_layer.named_parameters():
             if 'weight' in name:
                 writer.add_scalar('LastLayerGradients/grad_norm2_weights', para.grad.norm(), n_iter)
             if 'bias' in name:
                 writer.add_scalar('LastLayerGradients/grad_norm2_bias', para.grad.norm(), n_iter)
-        """
-        print('Training Epoch: {epoch} [{trained_samples}/{total_samples}]\tLoss: {:0.4f}\tLR: {:0.6f}'.format(
-            loss.item(),
-            optimizer.param_groups[0]['lr'],
-            epoch=epoch,
-            trained_samples=batch_index * args.b + len(images),
-            total_samples=len(cifar100_training_loader.dataset)
-        ))
-        """
         #update training loss for each iteration
         writer.add_scalar('Train/loss', loss.item(), n_iter)
 
@@ -130,20 +119,39 @@ def eval_training(epoch=0, tb=True):
 
     return correct.float() / len(cifar100_test_loader.dataset)
 
+def set_seed(_seed):
+    torch.manual_seed(_seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    np.random.seed(_seed)
+    random.seed(_seed)
+
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-net', type=str, required=True, help='net type')
+    parser.add_argument('-exp', type=str, required=True, help='experiment name')
     parser.add_argument('-gpu', action='store_true', default=False, help='use gpu or not')
     parser.add_argument('-b', type=int, default=128, help='batch size for dataloader')
+    parser.add_argument('-seed', type=int, default=0, help='random seed')
     parser.add_argument('-warm', type=int, default=1, help='warm up training phase')
     parser.add_argument('-lr', type=float, default=0.1, help='initial learning rate')
-    parser.add_argument('-alpha', type=float, default=-1, help='balance coefficient for knowledge distillation')
-    parser.add_argument('-tau', type=float, default=2.0, help='temperature of the softmax for knowledge distillation')
-    parser.add_argument('-nu', type=int, default=8, help='Coefficient for choosing the number of filters')
-    parser.add_argument('-rho', type=int, default=2, help='Coefficient for choosing kenel size')
-    parser.add_argument('-resume', action='store_true', default=False, help='resume training')
+    # For KD
+    parser.add_argument('-alpha', type=float, default=-1, 
+                        help='balance coefficient for knowledge distillation')
+    parser.add_argument('-tau', type=float, default=-1, 
+                        help='temperature of the softmax for knowledge distillation')
+    # For FCNN
+    parser.add_argument('-nu', type=int, default=-1, 
+                        help='Coefficient for choosing the number of filters')
+    parser.add_argument('-rho', type=int, default=-1, 
+                        help='Coefficient for choosing kenel size')
+    parser.add_argument('-resume', action='store_true', default=False, 
+                        help='resume training')
     args = parser.parse_args()
+
+    # Set random seed
+    # set_seed(args.seed)
 
     net = get_network(args)
 
@@ -166,7 +174,8 @@ if __name__ == '__main__':
 
     loss_function = nn.CrossEntropyLoss()
     optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=5e-4)
-    train_scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=settings.MILESTONES, gamma=0.2) #learning rate decay
+    #learning rate decay
+    train_scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=settings.MILESTONES, gamma=0.2) 
     iter_per_epoch = len(cifar100_training_loader)
     warmup_scheduler = WarmUpLR(optimizer, iter_per_epoch * args.warm)
 
@@ -237,12 +246,12 @@ if __name__ == '__main__':
         recent_weights_file = most_recent_weights(os.path.join(settings.CHECKPOINT_PATH, args.net, recent_folder))
         if not recent_weights_file:
             raise Exception('no recent weights file were found')
-        weights_path = os.path.join(settings.CHECKPOINT_PATH, args.net, recent_folder, recent_weights_file)
+        weights_path = os.path.join(settings.CHECKPOINT_PATH, args.net, 
+                                    recent_folder, recent_weights_file)
         print('loading weights file {} to resume training.....'.format(weights_path))
         net.load_state_dict(torch.load(weights_path))
 
         resume_epoch = last_epoch(os.path.join(settings.CHECKPOINT_PATH, args.net, recent_folder))
-
 
     for epoch in range(1, settings.EPOCH + 1):
         if epoch > args.warm:
@@ -259,14 +268,14 @@ if __name__ == '__main__':
         if epoch > settings.MILESTONES[1] and best_acc < acc:
             weights_path = checkpoint_path.format(net=args.net, epoch=epoch, type='best')
             print('saving weights file to {}'.format(weights_path))
-            torch.save(net.state_dict(), weights_path)
+            # torch.save(net.state_dict(), weights_path)
             best_acc = acc
             continue
 
         if not epoch % settings.SAVE_EPOCH:
             weights_path = checkpoint_path.format(net=args.net, epoch=epoch, type='regular')
             print('saving weights file to {}'.format(weights_path))
-            torch.save(net.state_dict(), weights_path)
+            # torch.save(net.state_dict(), weights_path)
 
     print("="*50)
     print(args)
@@ -274,5 +283,15 @@ if __name__ == '__main__':
     print(f"** # Params: {num_params:.5f}M")
     print(f"** # FLOPs: {_flops:.2f}G")
     print("="*50)
+    
+    # Write Results
+    res_path = f'./outputs/{args.exp}'
+    if not os.path.exists(res_path):
+        os.makedirs(res_path)
+    res_file = f'{res_path}/{args.net}.csv'
+    res = f'{args.seed},{args.alpha},{args.tau},{args.nu},{args.rho},' +\
+          f'{num_params:.5f},{_flops:.5f},{best_acc:.4f}\n'
+    with open(res_file, 'a') as f:
+        f.write(res)
 
     writer.close()

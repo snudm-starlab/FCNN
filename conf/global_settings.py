@@ -21,8 +21,8 @@ CHECKPOINT_PATH = 'checkpoint'
 #total training epoches
 EPOCH = 200
 MILESTONES = [60, 120, 160]
-# EPOCH = 120
-# MILESTONES = [60, 100]
+# EPOCH = 6
+# MILESTONES = [2, 2,2]
 
 #initial learning rate
 #INIT_LR = 0.1

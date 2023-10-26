@@ -12,11 +12,11 @@ from models.fcnn import FConv3d
 
 
 class LinearBottleNeck(nn.Module):
-
     def __init__(self, in_channels, out_channels, stride, t=6, class_num=100, 
                  dfirst=False, fconv=False, rho=None, nu=None):
         super().__init__()
         if fconv:
+            
             if dfirst:
                 self.residual = nn.Sequential(
                     FConv3d(3, in_channels, in_channels * t, 
@@ -47,7 +47,6 @@ class LinearBottleNeck(nn.Module):
                     nn.Conv2d(in_channels, in_channels * t, 1),
                     nn.BatchNorm2d(in_channels * t),
                     nn.ReLU6(inplace=True),
-
 
                     nn.Conv2d(in_channels * t, out_channels, 1),
                     nn.BatchNorm2d(out_channels)
@@ -87,7 +86,7 @@ class MobileNetV2(nn.Module):
         super().__init__()
 
         self.pre = nn.Sequential(
-            nn.Conv2d(3, 32, 1, padding=1),
+            nn.Conv2d(3, 32, 3, padding=1),
             nn.BatchNorm2d(32),
             nn.ReLU6(inplace=True)
         )
@@ -153,7 +152,7 @@ class MobileNetV2(nn.Module):
         return nn.Sequential(*layers)
 
 def mobilenetv2(dfirst=False):
-    return MobileNetV2(dfirst=True)
+    return MobileNetV2(dfirst=dfirst)
 
-def fmobilenetv2(dfirst=False):
-    return MobileNetV2(dfirst=dfirst, fconv=True, rho=4, nu=2)
+def fmobilenetv2(dfirst=False, rho=4, nu=2):
+    return MobileNetV2(dfirst=dfirst, fconv=True, rho=rho, nu=nu)
