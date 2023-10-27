@@ -2,7 +2,7 @@
 ## Overview
 ### Overview of FCNN
 <p align="center">
-    <img src="images/overview.PNG" alt="drawing"  width="700">
+    <img src="images/overview.png" alt="drawing"  width="700">
 </p>
 Flexible Convolutional Neural Network (FCNN) is an efficient convolutional neural network (CNN)
 that includes Flexible Convolution (FConv) which improves the efficiency of 2D convolutions.
