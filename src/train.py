@@ -128,8 +128,7 @@ def eval_training(epoch, _net, _test_loader, _loss):
     return correct.float() / len(cifar100_test_loader.dataset)
 
 if __name__ == '__main__':
-    """ main function for training """
-    
+    """ main function for training """    
     # Parsing arguments
     parser = argparse.ArgumentParser()
     # general arguments

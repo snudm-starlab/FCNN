@@ -40,7 +40,7 @@ class Settings:
     SAVE_EPOCH = 10
 
 if __name__ == '__main__':
-
+    """ main function for test """    
     parser = argparse.ArgumentParser()
     parser.add_argument('-net', type=str, required=True, help='net type')
     parser.add_argument('-gpu', action='store_true', default=False, help='use gpu or not')
