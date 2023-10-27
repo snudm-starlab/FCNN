@@ -42,7 +42,7 @@ FCNN
   │     ├── train_teacher.sh: a script for training ResNet34 model for a teacher model
   │     └── test.sh: a script for testing neural networks  
   │     
-  ├── checkpoint: a directory for checkpoints including teacher models
+  ├── requirements.txt: a list of dependencies
   └── README.md
 
 ```
