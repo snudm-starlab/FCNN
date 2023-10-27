@@ -27,9 +27,9 @@ import torch.optim as optim
 import torchvision
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
-from torch.utils.tensorboard import SummaryWriter
 import numpy as np
 from utils import * 
+from models.resnet import resnet34
 
 class Settings:
     """ Settings for preprocessing, training, and logging"""
@@ -40,7 +40,6 @@ class Settings:
     MILESTONES = [60, 120, 160]
     DATE_FORMAT = '%A_%d_%B_%Y_%Hh_%Mm_%Ss'
     TIME_NOW = datetime.now().strftime(DATE_FORMAT)
-    LOG_DIR = '../runs'
     SAVE_EPOCH = 10
 
 def train(epoch, _net, _train_loader, _train_scheduler, _opt, _loss):
@@ -126,8 +125,6 @@ def eval_training(epoch, _net, _test_loader, _loss):
         correct.float() / len(_test_loader.dataset),
         finish - start
     ))
-    print()
-
     return correct.float() / len(cifar100_test_loader.dataset)
 
 if __name__ == '__main__':
@@ -141,6 +138,8 @@ if __name__ == '__main__':
     parser.add_argument('-b', type=int, default=128, help='batch size for dataloader')
     parser.add_argument('-lr', type=float, default=0.1, help='initial learning rate')
     # arguments for KD
+    parser.add_argument('-teacher', type=str, default='../checkpoint/resent34/teacher.pth', 
+                        help='a path for teacher ResNet34 model')
     parser.add_argument('-alpha', type=float, default=-1, 
                         help='balance coefficient for knowledge distillation')
     parser.add_argument('-tau', type=float, default=-1, 
@@ -177,15 +176,14 @@ if __name__ == '__main__':
     optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=5e-4)
     train_scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=Settings.MILESTONES, gamma=0.2) 
     checkpoint_path = os.path.join(Settings.CHECKPOINT_PATH, args.net, Settings.TIME_NOW)
-
     #create checkpoint folder to save model
     if not os.path.exists(checkpoint_path):
         os.makedirs(checkpoint_path)
-    checkpoint_path = os.path.join(checkpoint_path, '{net}-{epoch}-{type}.pth')
+    checkpoint_path = os.path.join(checkpoint_path, 'best_model.pth')
 
     # load teacher 
     if args.alpha != -1:
-        teacher_path = 'checkpoint/resnet34/test.pth'
+        teacher_path = args.teacher
         teacher = resnet34()
         teacher.load_state_dict(torch.load(teacher_path))
         teacher = teacher.cuda()
@@ -199,8 +197,11 @@ if __name__ == '__main__':
                     optimizer, loss_function)
         acc = eval_training(epoch, net, cifar100_test_loader, loss_function)
 
-        if epoch > Settings.MILESTONES[1] and best_acc < acc:
+        # if epoch > Settings.MILESTONES[1] and best_acc < acc:
+        if best_acc < acc:
             best_acc = acc
+            print('* update best ckpt'.format(checkpoint_path))
+            torch.save(net.state_dict(), checkpoint_path)
             continue
     
     # print training results

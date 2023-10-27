@@ -37,7 +37,6 @@ class Settings:
     MILESTONES = [60, 120, 160]
     DATE_FORMAT = '%A_%d_%B_%Y_%Hh_%Mm_%Ss'
     TIME_NOW = datetime.now().strftime(DATE_FORMAT)
-    LOG_DIR = 'runs'
     SAVE_EPOCH = 10
 
 if __name__ == '__main__':

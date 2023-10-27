@@ -222,6 +222,7 @@ def get_flops(net, args, imagenet=False):
 
         list_pooling.append(flops)
 
+    _handles=[]
     def _register_hooks(net):
         """
         calculate the total number of FLOPs of a net
@@ -231,17 +232,23 @@ def get_flops(net, args, imagenet=False):
         childrens = list(net.children())
         if not childrens:
             if isinstance(net, torch.nn.Conv3d):
-                net.register_forward_hook(conv3d_hook)
+                handles.append(
+                        net.register_forward_hook(conv3d_hook))
             if isinstance(net, torch.nn.Conv2d):
-                net.register_forward_hook(conv_hook)
+                _handles.appennd(
+                net.register_forward_hook(conv_hook))
             if isinstance(net, torch.nn.Linear):
-                net.register_forward_hook(linear_hook)
+                _handles.append(
+                net.register_forward_hook(linear_hook))
             if isinstance(net, torch.nn.BatchNorm2d):
-                net.register_forward_hook(bn_hook)
+                _handles.append(
+                net.register_forward_hook(bn_hook))
             if isinstance(net, torch.nn.ReLU):
-                net.register_forward_hook(relu_hook)
+                _handles.append(
+                net.register_forward_hook(relu_hook))
             if isinstance(net, (torch.nn.MaxPool2d, torch.nn.AvgPool2d)):
-                net.register_forward_hook(pooling_hook)
+                _handles.append(
+                net.register_forward_hook(pooling_hook))
             return
         for c in childrens:
             _register_hooks(c)
@@ -252,6 +259,9 @@ def get_flops(net, args, imagenet=False):
     input = Variable(torch.rand(3, 32, 32).unsqueeze(0), requires_grad=True).cuda()
     # compute FLOPs
     net(input)
+    # remove hook functions
+    for handle in _handles:
+        handle.remove()
     total_flops = (sum(list_conv3d) + sum(list_conv) + sum(list_linear)
                    + sum(list_bn) + sum(list_relu) + sum(list_pooling))
     total_flops /= 1e9

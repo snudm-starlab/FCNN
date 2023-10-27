@@ -111,6 +111,7 @@ class FConv3dBlock(nn.Module):
             self.shortcut = nn.Sequential(
                 FConv3d(1, in_channels, out_channels, 
                     stride=stride, rho=rho, nu=nu),
+                # nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=stride, bias=False),
                 nn.BatchNorm2d(out_channels)
             )
 
