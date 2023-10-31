@@ -126,7 +126,7 @@ GPU=0
 NET=fcnn34
 RHO=6
 NU=2
-WEIGHT={Your-model-path}
+WEIGHTS={Your-model-path}
 cd src/
 CUDAVISIBLE_DEVICES=$GPU python test.py -net $NET -rho $RHO -nu $NU -gpu \
                                          -weights $WEIGHTS 
