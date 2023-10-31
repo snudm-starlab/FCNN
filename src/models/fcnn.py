@@ -107,7 +107,7 @@ class FConv3dBlock(nn.Module):
         self.shortcut = nn.Sequential()
 
         # use 1*1 convolution to match the dimension for shortcut
-        if stride != 1:
+        if stride != 1 or in_channels != out_channels:
             self.shortcut = nn.Sequential(
                 FConv3d(1, in_channels, out_channels, 
                     stride=stride, rho=rho, nu=nu),

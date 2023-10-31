@@ -49,7 +49,6 @@ def get_network(args):
         sys.exit()
     if args.gpu:
         net = net.cuda()
-
     return net
 
 
@@ -109,7 +108,7 @@ def get_test_dataloader(mean, std, batch_size=16, num_workers=2, shuffle=True):
 
 
 
-def get_flops(net, args, imagenet=False):
+def get_flops(net, args, imagenet=False, x=None, use_gpu=True):
     """
     return FLOPs of a given neural network
     * Inputs:
@@ -232,10 +231,10 @@ def get_flops(net, args, imagenet=False):
         childrens = list(net.children())
         if not childrens:
             if isinstance(net, torch.nn.Conv3d):
-                handles.append(
+                _handles.append(
                         net.register_forward_hook(conv3d_hook))
             if isinstance(net, torch.nn.Conv2d):
-                _handles.appennd(
+                _handles.append(
                 net.register_forward_hook(conv_hook))
             if isinstance(net, torch.nn.Linear):
                 _handles.append(
@@ -256,9 +255,13 @@ def get_flops(net, args, imagenet=False):
     # register hook functions
     _register_hooks(net)
     # dummy imput for estimating FLOPs
-    input = Variable(torch.rand(3, 32, 32).unsqueeze(0), requires_grad=True).cuda()
+    if x is None:
+        # x = variable(torch.rand(3, 32, 32).unsqueeze(0), requires_grad=true)
+        x = torch.randn(1, 3, 32, 32)
+    if use_gpu:
+        x = x.cuda()
     # compute FLOPs
-    net(input)
+    net(x)
     # remove hook functions
     for handle in _handles:
         handle.remove()
