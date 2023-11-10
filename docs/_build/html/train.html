@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>train module &mdash; FCNN  documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=5929fcd5"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="unit_test module" href="unit_test.html" />
+    <link rel="prev" title="test module" href="test.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            FCNN
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">src</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="test.html">test module</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">train module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#train.Settings"><code class="docutils literal notranslate"><span class="pre">Settings</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#train.Settings.CHECKPOINT_PATH"><code class="docutils literal notranslate"><span class="pre">Settings.CHECKPOINT_PATH</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#train.Settings.CIFAR100_TRAIN_MEAN"><code class="docutils literal notranslate"><span class="pre">Settings.CIFAR100_TRAIN_MEAN</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#train.Settings.CIFAR100_TRAIN_STD"><code class="docutils literal notranslate"><span class="pre">Settings.CIFAR100_TRAIN_STD</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#train.Settings.DATE_FORMAT"><code class="docutils literal notranslate"><span class="pre">Settings.DATE_FORMAT</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#train.Settings.EPOCH"><code class="docutils literal notranslate"><span class="pre">Settings.EPOCH</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#train.Settings.MILESTONES"><code class="docutils literal notranslate"><span class="pre">Settings.MILESTONES</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#train.Settings.SAVE_EPOCH"><code class="docutils literal notranslate"><span class="pre">Settings.SAVE_EPOCH</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#train.Settings.TIME_NOW"><code class="docutils literal notranslate"><span class="pre">Settings.TIME_NOW</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#train.eval_training"><code class="docutils literal notranslate"><span class="pre">eval_training()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#train.train"><code class="docutils literal notranslate"><span class="pre">train()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="unit_test.html">unit_test module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html">utils module</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">FCNN</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">src</a></li>
+      <li class="breadcrumb-item active">train module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/train.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-train">
+<span id="train-module"></span><h1>train module<a class="headerlink" href="#module-train" title="Link to this heading"></a></h1>
+<p>Starlab CNN Compression with FCNN (Flexible Convolutional Neural Network)</p>
+<dl class="simple">
+<dt>Author: Seungcheol Park (<a class="reference external" href="mailto:ant6si&#37;&#52;&#48;snu&#46;ac&#46;kr">ant6si<span>&#64;</span>snu<span>&#46;</span>ac<span>&#46;</span>kr</a>), Seoul National University</dt><dd><p>U Kang (<a class="reference external" href="mailto:ukang&#37;&#52;&#48;snu&#46;ac&#46;kr">ukang<span>&#64;</span>snu<span>&#46;</span>ac<span>&#46;</span>kr</a>), Seoul National University</p>
+</dd>
+</dl>
+<p>Version : 1.0
+Date : Oct 26, 2023
+Main Contact: Seungcheol Park
+This software is free of charge under research purposes.
+For commercial purposes, please contact the authors.</p>
+<dl class="simple">
+<dt>train.py</dt><dd><ul class="simple">
+<li><p>codes for training</p></li>
+<li><p>parsing arguments, loading data and model, and logging</p></li>
+</ul>
+</dd>
+</dl>
+<p>This code is mainly based on the [GitHub Repository]
+[GitHub Repository]: <a class="reference external" href="https://github.com/weiaicunzai/pytorch-cifar100">https://github.com/weiaicunzai/pytorch-cifar100</a></p>
+<dl class="py class">
+<dt class="sig sig-object py" id="train.Settings">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">train.</span></span><span class="sig-name descname"><span class="pre">Settings</span></span><a class="headerlink" href="#train.Settings" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Settings for preprocessing, training, and logging</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="train.Settings.CHECKPOINT_PATH">
+<span class="sig-name descname"><span class="pre">CHECKPOINT_PATH</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'../checkpoint'</span></em><a class="headerlink" href="#train.Settings.CHECKPOINT_PATH" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="train.Settings.CIFAR100_TRAIN_MEAN">
+<span class="sig-name descname"><span class="pre">CIFAR100_TRAIN_MEAN</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">(0.5070751592371323,</span> <span class="pre">0.48654887331495095,</span> <span class="pre">0.4409178433670343)</span></em><a class="headerlink" href="#train.Settings.CIFAR100_TRAIN_MEAN" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="train.Settings.CIFAR100_TRAIN_STD">
+<span class="sig-name descname"><span class="pre">CIFAR100_TRAIN_STD</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">(0.2673342858792401,</span> <span class="pre">0.2564384629170883,</span> <span class="pre">0.27615047132568404)</span></em><a class="headerlink" href="#train.Settings.CIFAR100_TRAIN_STD" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="train.Settings.DATE_FORMAT">
+<span class="sig-name descname"><span class="pre">DATE_FORMAT</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'%A_%d_%B_%Y_%Hh_%Mm_%Ss'</span></em><a class="headerlink" href="#train.Settings.DATE_FORMAT" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="train.Settings.EPOCH">
+<span class="sig-name descname"><span class="pre">EPOCH</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">200</span></em><a class="headerlink" href="#train.Settings.EPOCH" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="train.Settings.MILESTONES">
+<span class="sig-name descname"><span class="pre">MILESTONES</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[60,</span> <span class="pre">120,</span> <span class="pre">160]</span></em><a class="headerlink" href="#train.Settings.MILESTONES" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="train.Settings.SAVE_EPOCH">
+<span class="sig-name descname"><span class="pre">SAVE_EPOCH</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">10</span></em><a class="headerlink" href="#train.Settings.SAVE_EPOCH" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="train.Settings.TIME_NOW">
+<span class="sig-name descname"><span class="pre">TIME_NOW</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'Thursday_09_November_2023_01h_32m_24s'</span></em><a class="headerlink" href="#train.Settings.TIME_NOW" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="train.eval_training">
+<span class="sig-prename descclassname"><span class="pre">train.</span></span><span class="sig-name descname"><span class="pre">eval_training</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">_epoch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_net</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_test_loader</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_loss</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#train.eval_training" title="Link to this definition"></a></dt>
+<dd><p>a function for testting a neural network</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt>Inputs:</dt><dd><ul>
+<li><p>_epoch: numbering of epochs</p></li>
+<li><p>_net: neural network to train</p></li>
+<li><p>_train_loader: data loader for training</p></li>
+<li><p>_opt: an optimizer for training</p></li>
+<li><p>_loss: a loss function</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Outputs:</dt><dd><ul>
+<li><p>_net: a trained neural network</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="train.train">
+<span class="sig-prename descclassname"><span class="pre">train.</span></span><span class="sig-name descname"><span class="pre">train</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">_</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_net</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_train_loader</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_train_scheduler</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_opt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_loss</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#train.train" title="Link to this definition"></a></dt>
+<dd><p>a function for training a given net for an epoch</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt>Inputs:</dt><dd><ul>
+<li><p>epoch: numbering of epochs</p></li>
+<li><p>_net: neural network to train</p></li>
+<li><p>_train_loader: data loader for training</p></li>
+<li><p>train_scheduler: a training scheduler</p></li>
+<li><p>_opt: an optimizer for training</p></li>
+<li><p>_loss: a loss function</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Outputs:</dt><dd><ul>
+<li><p>_net: a trained neural network</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="test.html" class="btn btn-neutral float-left" title="test module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="unit_test.html" class="btn btn-neutral float-right" title="unit_test module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, dmlab.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
