@@ -18,7 +18,7 @@ we reduce the number of parameters via sharing filters in CNN.
 We use different channel groups for shared filters.
 
 
-**(I3) translation (Figure (d)):**
+**(I3) Translation (Figure (d)):**
 we improve the accuracy of the model by translating the receptive field of filters.
 A diversified combination of channel groups improves the accuracy of the compressed model.
 
