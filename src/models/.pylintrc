@@ -1,0 +1,6 @@
+[MASTER]
+init-hook="import sys; sys.path.append('/home/jener05458/SWStarlab/FCNN/src')"
+# init-hook="import sys; sys.path.append('Your_path/FALCON2/src')"
+
+[REPORTS]
+disable = E1101, R0902, R0913

@@ -1,22 +1,21 @@
-#############################################################################
-# Starlab CNN Compression with FCNN (Flexible Convolutional Neural Network)
-# Author: Seungcheol Park (ant6si@snu.ac.kr), Seoul National University
-#         U Kang (ukang@snu.ac.kr), Seoul National University
-# Version : 1.0
-# Date : Oct 26, 2023
-# Main Contact: Seungcheol Park
-# This software is free of charge under research purposes.
-# For commercial purposes, please contact the authors.
-# 
-# resnet.py
-# - implementation of ResNet18 and ResNet34 for CIFAR100
-#
-# This code is mainly based on the [GitHub Repository]
-# [GitHub Repository]: https://github.com/weiaicunzai/pytorch-cifar100
-################################################################################
+"""
+Starlab CNN Compression with FCNN (Flexible Convolutional Neural Network)
+Author: Seungcheol Park (ant6si@snu.ac.kr), Seoul National University
+        U Kang (ukang@snu.ac.kr), Seoul National University
+Version : 1.0
+Date : Oct 26, 2023
+Main Contact: Seungcheol Park
+This software is free of charge under research purposes.
+For commercial purposes, please contact the authors.
 
-import torch
-import torch.nn as nn
+resnet.py
+- implementation of ResNet18 and ResNet34 for CIFAR100
+
+This code is mainly based on the [GitHub Repository]
+[GitHub Repository]: https://github.com/weiaicunzai/pytorch-cifar100
+"""
+
+from torch import nn
 
 class BasicBlock(nn.Module):
     """ Convolution block for ResNet18 and ResNet34 """
@@ -34,7 +33,8 @@ class BasicBlock(nn.Module):
 
         # residual function
         self.residual_function = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=stride, padding=1, bias=False),
+            nn.Conv2d(in_channels, out_channels, kernel_size=3,
+                      stride=stride, padding=1, bias=False),
             nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace=True),
             nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1, bias=False),
@@ -51,16 +51,16 @@ class BasicBlock(nn.Module):
                 nn.BatchNorm2d(out_channels)
             )
 
-    def forward(self, x):
+    def forward(self, _input):
         """
         a forward function for convolutional block
 
         * Inputs:
-            - x: an input
+            - _input: an input
         * Outputs:
             - out: an output
         """
-        out = nn.ReLU(inplace=True)(self.residual_function(x) + self.shortcut(x))
+        out = nn.ReLU(inplace=True)(self.residual_function(_input) + self.shortcut(_input))
         return out
 
 class ResNet(nn.Module):
@@ -76,7 +76,7 @@ class ResNet(nn.Module):
             - num_classes: the number of classes
         """
         super().__init__()
-        
+
         self.in_channels = 64
         self.conv1 = nn.Sequential(
             nn.Conv2d(3, self.in_channels, kernel_size=3, padding=1, bias=False),
@@ -88,7 +88,7 @@ class ResNet(nn.Module):
         self.conv4_x = self._make_stages(block, 256, num_blocks[2], 2)
         self.conv5_x = self._make_stages(block, 512, num_blocks[3], 2)
         self.avg_pool = nn.AdaptiveAvgPool2d((1, 1))
-        self.fc = nn.Linear(512, num_classes)
+        self.fc_layer = nn.Linear(512, num_classes)
 
     def _make_stages(self, block, out_channels, num_blocks, stride):
         """
@@ -102,33 +102,33 @@ class ResNet(nn.Module):
         * Outputs:
             - stage: a Sequential module of a ResNet stage
         """
-        
+
         strides = [stride] + [1] * (num_blocks - 1)
         # Append blocks in the stage
         layers = []
-        for i, stride in enumerate(strides):                
-            layers.append(block(self.in_channels, out_channels, stride))
+        for _, _stride in enumerate(strides):
+            layers.append(block(self.in_channels, out_channels, _stride))
             self.in_channels = out_channels
         stage = nn.Sequential(*layers)
         return stage
 
-    def forward(self, x):
+    def forward(self, _input):
         """
         a forward function for convolutional block
 
         * Inputs:
-            - x: an input
+            - _input: an input
         * Outputs:
             - out: an output
         """
-        out = self.conv1(x)
+        out = self.conv1(_input)
         out = self.conv2_x(out)
         out = self.conv3_x(out)
         out = self.conv4_x(out)
         out = self.conv5_x(out)
         out = self.avg_pool(out)
         out = out.view(out.size(0), -1)
-        out = self.fc(out)
+        out = self.fc_layer(out)
         return out
 
 def resnet18():
@@ -148,4 +148,4 @@ def resnet34():
         - net: a Resnet34 object
     """
     net = ResNet(BasicBlock, [3, 4, 6, 3])
-    return net 
+    return net
