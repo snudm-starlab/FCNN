@@ -1,32 +1,31 @@
-#############################################################################
-# Starlab CNN Compression with FCNN (Flexible Convolutional Neural Network)
-# Author: Seungcheol Park (ant6si@snu.ac.kr), Seoul National University
-#         U Kang (ukang@snu.ac.kr), Seoul National University
-# Version : 1.0
-# Date : Oct 26, 2023
-# Main Contact: Seungcheol Park
-# This software is free of charge under research purposes.
-# For commercial purposes, please contact the authors.
-# 
-# test.py
-# - codes for testing trained models
-#
-# This code is mainly based on the [GitHub Repository]
-# [GitHub Repository]: https://github.com/weiaicunzai/pytorch-cifar100
-################################################################################
+"""
+Starlab CNN Compression with FCNN (Flexible Convolutional Neural Network)
+
+Author: Seungcheol Park (ant6si@snu.ac.kr), Seoul National University
+        U Kang (ukang@snu.ac.kr), Seoul National University
+
+Version : 1.0
+Date : Oct 26, 2023
+Main Contact: Seungcheol Park
+This software is free of charge under research purposes.
+For commercial purposes, please contact the authors.
+
+test.py
+    - codes for testing trained models
+
+This code is mainly based on the [GitHub Repository]
+[GitHub Repository]: https://github.com/weiaicunzai/pytorch-cifar100
+"""
 
 import argparse
 from datetime import datetime
-from matplotlib import pyplot as plt
 
 import torch
-import torchvision.transforms as transforms
-from torch.utils.data import DataLoader
-
+import numpy as np
 from utils import \
         get_network, get_test_dataloader, get_flops
-import numpy as np
-from tqdm import tqdm
+
+
 
 class Settings:
     """ Settings for preprocessing, training, and logging"""
@@ -40,23 +39,22 @@ class Settings:
     SAVE_EPOCH = 10
 
 if __name__ == '__main__':
-    """ main function for test """    
     parser = argparse.ArgumentParser()
     parser.add_argument('-net', type=str, required=True, help='net type')
     parser.add_argument('-gpu', action='store_true', default=False, help='use gpu or not')
     parser.add_argument('-b', type=int, default=128, help='batch size for dataloader')
-    parser.add_argument('-weights', type=str, required=True, 
+    parser.add_argument('-weights', type=str, required=True,
                         help='the weights file you want to test')
     # arguments for FCNN
-    parser.add_argument('-nu', type=int, default=-1, 
+    parser.add_argument('-nu', type=int, default=-1,
                         help='Coefficient for choosing the number of filters')
-    parser.add_argument('-rho', type=int, default=-1, 
+    parser.add_argument('-rho', type=int, default=-1,
                         help='Coefficient for choosing kenel size')
     args = parser.parse_args()
 
     # generate networks
     net = get_network(args)
-    
+
     # get test data loader
     cifar100_test_loader = get_test_dataloader(
         Settings.CIFAR100_TRAIN_MEAN,
@@ -64,13 +62,15 @@ if __name__ == '__main__':
         num_workers=4,
         batch_size=args.b,
     )
-    
+
     # load a trained model to evaluate
     net.load_state_dict(torch.load(args.weights))
     net.eval()
-    
-    # evaluate 
-    correct = 0.0; total = 0
+
+    # evaluate
+    CORRECT = 0.0
+    TOTAL = 0
+
     with torch.no_grad():
         for n_iter, (image, label) in enumerate(cifar100_test_loader):
             if args.gpu:
@@ -78,17 +78,20 @@ if __name__ == '__main__':
                 label = label.cuda()
             output = net(image)
             pred = output.argmax(dim=1)
-            correct += pred.eq(label).float().sum()
-    _acc = correct / len(cifar100_test_loader.dataset) * 100
+            CORRECT += pred.eq(label).float().sum()
+    _acc = CORRECT / len(cifar100_test_loader.dataset) * 100
 
     # print results
     print()
-    orig_acc = 77.77; orig_params = 21.33; orig_flops=2.32043
+    ORIG_ACC = 77.77
+    ORIG_PARAMS = 21.33
+    ORIG_FLOPS=2.32043  # FLOPS equal to FLOPs (FLOPS is to upper_case of FLOPs)
+
     _params = np.sum([_p.numel() for _n, _p in net.named_parameters()])/1e6
     _flops = get_flops(net, args, imagenet=False)
-    print("="*30)     
+    print("="*30)
     print("* After compression w/ FCNN")
-    print(f"  + Accuracy: {_acc:.2f} ({_acc-orig_acc:.2f})")
-    print(f"  + Parameters: {_params:.2f}M ({orig_params/_params:.2f}x)")
-    print(f"  + FLOPs: {_flops:.2f}G ({orig_flops/_flops:.2f}x)")
+    print(f"  + Accuracy: {_acc:.2f} ({_acc-ORIG_ACC:.2f})")
+    print(f"  + Parameters: {_params:.2f}M ({ORIG_PARAMS/_params:.2f}x)")
+    print(f"  + FLOPs: {_flops:.2f}G ({ORIG_FLOPS/_flops:.2f}x)")
     print("="*30)

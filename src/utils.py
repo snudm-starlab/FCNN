@@ -1,34 +1,31 @@
-#############################################################################
-# Starlab CNN Compression with FCNN (Flexible Convolutional Neural Network)
-# Author: Seungcheol Park (ant6si@snu.ac.kr), Seoul National University
-#         U Kang (ukang@snu.ac.kr), Seoul National University
-# Version : 1.0
-# Date : Oct 26, 2023
-# Main Contact: Seungcheol Park
-# This software is free of charge under research purposes.
-# For commercial purposes, please contact the authors.
-# 
-# utils.py
-# - utilization functions to help train and test
-#
-# This code is mainly based on the [GitHub Repository]
-# [GitHub Repository]: https://github.com/weiaicunzai/pytorch-cifar100
-################################################################################
+"""
+Starlab CNN Compression with FCNN (Flexible Convolutional Neural Network)
 
-import os
+Author: 
+    - Seungcheol Park (ant6si@snu.ac.kr), Seoul National University
+    - U Kang (ukang@snu.ac.kr), Seoul National University
+
+Version : 1.0
+Date : Oct 26, 2023
+Main Contact: Seungcheol Park
+This software is free of charge under research purposes.
+For commercial purposes, please contact the authors.
+
+utils.py
+- utilization functions to help train and test
+
+This code is mainly based on the [GitHub Repository]
+[GitHub Repository]: https://github.com/weiaicunzai/pytorch-cifar100
+"""
 import sys
-import re
-from datetime import datetime
-
-from torch.autograd import Variable
-import numpy
 
 import torch
-from torch.optim.lr_scheduler import _LRScheduler
 import torchvision
-import torchvision.transforms as transforms
+from torchvision import transforms
 from torch.utils.data import DataLoader
 
+from models.resnet import resnet34
+from models.fcnn import fcnn34
 
 def get_network(args):
     """
@@ -39,11 +36,9 @@ def get_network(args):
        - net: a neural network 
     """
     if args.net == 'resnet34':
-        from models.resnet import resnet34
         net = resnet34()
     elif args.net == 'fcnn34':
-        from models.fcnn import fcnn34
-        net = fcnn34(nu=args.nu, rho=args.rho)
+        net = fcnn34(nu_params=args.nu, rho=args.rho)
     else:
         print('the network name you have entered is not supported yet')
         sys.exit()
@@ -74,10 +69,10 @@ def get_training_dataloader(mean, std, batch_size=16, num_workers=2, shuffle=Tru
         transforms.ToTensor(),
         transforms.Normalize(mean, std)
     ])
-    cifar100_training = torchvision.datasets.CIFAR100(root='../data', train=True, 
+    cifar100_training = torchvision.datasets.CIFAR100(root='../data', train=True,
                                                       download=True, transform=transform_train)
     cifar100_training_loader = DataLoader(
-        cifar100_training, shuffle=shuffle, 
+        cifar100_training, shuffle=shuffle,
         num_workers=num_workers, batch_size=batch_size)
     return cifar100_training_loader
 
@@ -108,7 +103,7 @@ def get_test_dataloader(mean, std, batch_size=16, num_workers=2, shuffle=True):
 
 
 
-def get_flops(net, args, imagenet=False, x=None, use_gpu=True):
+def get_flops(net, args, imagenet=False, _input=None, use_gpu=True):
     """
     return FLOPs of a given neural network
     * Inputs:
@@ -133,8 +128,8 @@ def get_flops(net, args, imagenet=False, x=None, use_gpu=True):
 
         kernel_ops = self.kernel_size[0] * self.kernel_size[1] * self.kernel_size[2] *\
                      (self.in_channels / self.groups) * (2 if multiply_adds else 1) *\
-                     args.nu/args.rho                   
-                    
+                     args.nu/args.rho
+
         bias_ops = 1 if self.bias is not None else 0
 
         params = output_channels * (kernel_ops + bias_ops)
@@ -144,14 +139,14 @@ def get_flops(net, args, imagenet=False, x=None, use_gpu=True):
 
     list_conv = []
 
-    def conv_hook(self, input, output):
+    def conv_hook(self, _input, output):
         """
         a hook function for calculating FLOPs of 2d convolution layers
         * Inputs:
             - _input: an input of the module
             - _output: an output of the module
         """
-        batch_size, _, _, _ = input[0].size()
+        batch_size, _, _, _ = _input[0].size()
         output_channels, output_height, output_width = output[0].size()
 
         kernel_ops = self.kernel_size[0] * self.kernel_size[1] *\
@@ -165,14 +160,14 @@ def get_flops(net, args, imagenet=False, x=None, use_gpu=True):
 
     list_linear = []
 
-    def linear_hook(self, input, output):
+    def linear_hook(self, _input, output):
         """
         a hook function for calculating FLOPs of linear layers
         * Inputs:
             - _input: an input of the module
             - _output: an output of the module
         """
-        batch_size = input[0].size(0) if input[0].dim() == 2 else 1
+        batch_size = _input[0].size(0) if _input[0].dim() == 2 else 1
 
         weight_ops = self.weight.nelement() * (2 if multiply_adds else 1)
         bias_ops = self.bias.nelement()
@@ -182,36 +177,36 @@ def get_flops(net, args, imagenet=False, x=None, use_gpu=True):
 
     list_bn = []
 
-    def bn_hook(self, input, output):
+    def bn_hook(self, _input, output):
         """
         a hook function for calculating FLOPs of batch normalization (BN) layers
         * Inputs:
             - _input: an input of the module
             - _output: an output of the module
         """
-        list_bn.append(input[0].nelement())
+        list_bn.append(_input[0].nelement())
 
     list_relu = []
 
-    def relu_hook(self, input, output):
+    def relu_hook(self, _input, output):
         """
         a hook function for calculating FLOPs of ReLU layers
         * Inputs:
             - _input: an input of the module
             - _output: an output of the module
         """
-        list_relu.append(input[0].nelement())
+        list_relu.append(_input[0].nelement())
 
     list_pooling = []
 
-    def pooling_hook(self, input, output):
+    def pooling_hook(self, _input, output):
         """
         a hook function for calculating FLOPs of pooling layers
         * Inputs:
             - _input: an input of the module
             - _output: an output of the module
         """
-        batch_size, _, _, _ = input[0].size()
+        batch_size, _, _, _ = _input[0].size()
         output_channels, output_height, output_width = output[0].size()
 
         kernel_ops = self.kernel_size * self.kernel_size
@@ -249,19 +244,19 @@ def get_flops(net, args, imagenet=False, x=None, use_gpu=True):
                 _handles.append(
                 net.register_forward_hook(pooling_hook))
             return
-        for c in childrens:
-            _register_hooks(c)
-    
+        for child in childrens:
+            _register_hooks(child)
+
     # register hook functions
     _register_hooks(net)
     # dummy imput for estimating FLOPs
-    if x is None:
+    if _input is None:
         # x = variable(torch.rand(3, 32, 32).unsqueeze(0), requires_grad=true)
-        x = torch.randn(1, 3, 32, 32)
+        _input = torch.randn(1, 3, 32, 32)
     if use_gpu:
-        x = x.cuda()
+        _input = _input.cuda()
     # compute FLOPs
-    net(x)
+    net(_input)
     # remove hook functions
     for handle in _handles:
         handle.remove()
